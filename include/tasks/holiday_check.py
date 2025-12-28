@@ -1,6 +1,7 @@
 import logging
 import pendulum
 import pandas_market_calendars
+import numpy as np
 
 
 def is_holiday(
@@ -16,6 +17,7 @@ def is_holiday(
         bool: True if today is a holiday, False otherwise.
     """ 
     today = pendulum.today(timezone).to_date_string()
+    today = np.datetime64(today)
 
     cal = pandas_market_calendars.get_calendar(calendar)
     holidays = cal.holidays().holidays

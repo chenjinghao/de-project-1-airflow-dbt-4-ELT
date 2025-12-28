@@ -59,7 +59,7 @@ services:
     image: metabase/metabase:v0.50.4
     restart: always
     ports:
-      - 3000:3000
+      - 3200:3000
     volumes:
       - ./include/data/metabase:/metabase-data
     networks:
@@ -99,7 +99,7 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
       PGADMIN_CONFIG_SERVER_MODE: 'False'  # enable multi-user UI in single instance
     ports:
-      - "5050:80"
+      - "5800:80"
     volumes:
       - ./include/data/pgadmin:/var/lib/pgadmin
     networks:
