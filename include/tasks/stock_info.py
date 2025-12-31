@@ -68,6 +68,9 @@ def extract_price_top3_most_active_stocks(file_path, **context):
         folder_name = file_path.split('/')[1]
 
         most_active_stocks = context['ti'].xcom_pull(key='most_active_stocks', task_ids='extract_most_active_stocks')
+        if not most_active_stocks:
+            raise AirflowException("most_active_stocks XCom missing from extract_most_active_stocks")
+
         top3_stocks = [stock['ticker'] for stock in most_active_stocks[:3]]
         context['ti'].xcom_push(key='top3_stocks', value=top3_stocks)
 
@@ -107,7 +110,10 @@ def extract_news_top3_most_active_stocks(**context):
     api = BaseHook.get_connection('stock_api')
     url = f'{api.host}'
 
-    top3_stocks = context['ti'].xcom_pull(key='top3_stocks', task_ids='extract_price_top3_most_active_stocks')
+    top3_stocks = context['ti'].xcom_pull(key='top3_stocks', task_ids='price_top3_most_active_stocks')
+    if not top3_stocks:
+        raise AirflowException("top3_stocks XCom missing from price_top3_most_active_stocks")
+
     folder_path = context['ti'].xcom_pull(key='return_value', task_ids='create_today_folder')
     bucket_name = folder_path.split('/')[0]
     folder_name = folder_path.split('/')[1]
@@ -149,7 +155,10 @@ def extract_insider_top3_most_active_stocks(**context):
     api = BaseHook.get_connection('stock_api')
     url = f'{api.host}'
 
-    top3_stocks = context['ti'].xcom_pull(key='top3_stocks', task_ids='extract_price_top3_most_active_stocks')
+    top3_stocks = context['ti'].xcom_pull(key='top3_stocks', task_ids='price_top3_most_active_stocks')
+    if not top3_stocks:
+        raise AirflowException("top3_stocks XCom missing from price_top3_most_active_stocks")
+
     folder_path = context['ti'].xcom_pull(key='return_value', task_ids='create_today_folder')
     bucket_name = folder_path.split('/')[0]
     folder_name = folder_path.split('/')[1]

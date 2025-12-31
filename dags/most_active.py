@@ -15,7 +15,7 @@ import logging
 # tasks
 from include.tasks.holiday_check import is_holiday
 from include.tasks.create_today_folder import create_today_folder
-from include.tasks.stock_info import extract_most_active_stocks, extract_price_top5_most_active_stocks, extract_news_top5_most_active_stocks,extract_insider_top5_most_active_stocks
+from include.tasks.stock_info import extract_most_active_stocks, extract_price_top3_most_active_stocks, extract_price_top3_most_active_stocks, extract_news_top3_most_active_stocks,extract_insider_top3_most_active_stocks
 
 
 @dag(
@@ -58,28 +58,28 @@ def most_active_dag():
     def most_active_stocks_task(folder_path, **context):
         return extract_most_active_stocks(folder_path, **context)
     
-    @task(task_id="price_top5_most_active_stocks", pool="api_pool")
-    def price_top5_most_active_stocks_task(folder_path,**context):
-        return extract_price_top5_most_active_stocks(folder_path, **context)
+    @task(task_id="price_top3_most_active_stocks", pool="api_pool")
+    def price_top3_most_active_stocks_task(folder_path,**context):
+        return extract_price_top3_most_active_stocks(folder_path, **context)
 
-    @task(task_id="news_top5_most_active_stocks", pool="api_pool")
-    def news_top5_most_active_stocks_task(**context):
-        return extract_news_top5_most_active_stocks(**context)
+    @task(task_id="news_top3_most_active_stocks", pool="api_pool")
+    def news_top3_most_active_stocks_task(**context):
+        return extract_news_top3_most_active_stocks(**context)
     
-    @task(task_id="insider_top5_most_active_stocks", pool="api_pool")
-    def insider_top5_most_active_stocks_task(**context):
-        return extract_insider_top5_most_active_stocks(**context)
+    @task(task_id="insider_top3_most_active_stocks", pool="api_pool")
+    def insider_top3_most_active_stocks_task(**context):
+        return extract_insider_top3_most_active_stocks(**context)
     
     # Store task references
     holiday_check = holiday_check()
     create_folder = create_date_folder()
     most_active = most_active_stocks_task(create_folder)
-    price_top5 = price_top5_most_active_stocks_task(most_active)
-    news_top5 = news_top5_most_active_stocks_task()
-    insider_top5 = insider_top5_most_active_stocks_task()
+    price_top3 = price_top3_most_active_stocks_task(most_active)
+    news_top3 = news_top3_most_active_stocks_task()
+    insider_top3 = insider_top3_most_active_stocks_task()
 
     # --- Task Dependencies ---
     holiday_check >> [create_folder, end_task]
-    create_folder >> most_active >> price_top5 >> news_top5 >> insider_top5 >> end_task
+    create_folder >> most_active >> price_top3 >> news_top3 >> insider_top3 >> end_task
 
 most_active_dag()
