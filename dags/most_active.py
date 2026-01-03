@@ -1,4 +1,4 @@
-from airflow.sdk import dag, task
+from airflow.sdk import dag, task, task_group
 from airflow.sdk.bases.hook import BaseHook
 from airflow.sdk.bases.sensor import PokeReturnValue
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -48,38 +48,45 @@ def most_active_dag():
             return end_task.task_id
         else:
             return "create_today_folder"
+    @task_group(group_id='extraction')
+    # @task(task_id="create_today_folder")
+    def extraction_group():
+        @task(task_id="create_today_folder", pool="api_pool")
+        def create_date_folder():
+            return create_today_folder()
     
-    @task(task_id="create_today_folder")
-    def create_date_folder():
-        return create_today_folder()
-    
-    # Use pool to limit concurrent API calls
-    @task(task_id="extract_most_active_stocks", pool="api_pool")
-    def most_active_stocks_task(folder_path, **context):
-        return extract_most_active_stocks(folder_path, **context)
-    
-    @task(task_id="price_top3_most_active_stocks", pool="api_pool")
-    def price_top3_most_active_stocks_task(folder_path,**context):
-        return extract_price_top3_most_active_stocks(folder_path, **context)
+        # Use pool to limit concurrent API calls
+        @task(task_id="extract_most_active_stocks", pool="api_pool")
+        def most_active_stocks_task(folder_path, **context):
+            return extract_most_active_stocks(folder_path, **context)
+        
+        @task(task_id="price_top3_most_active_stocks", pool="api_pool")
+        def price_top3_most_active_stocks_task(folder_path,**context):
+            return extract_price_top3_most_active_stocks(folder_path, **context)
 
-    @task(task_id="news_top3_most_active_stocks", pool="api_pool")
-    def news_top3_most_active_stocks_task(**context):
-        return extract_news_top3_most_active_stocks(**context)
-    
-    @task(task_id="insider_top3_most_active_stocks", pool="api_pool")
-    def insider_top3_most_active_stocks_task(**context):
-        return extract_insider_top3_most_active_stocks(**context)
-    
+        @task(task_id="news_top3_most_active_stocks", pool="api_pool")
+        def news_top3_most_active_stocks_task(**context):
+            return extract_news_top3_most_active_stocks(**context)
+        
+        @task(task_id="insider_top3_most_active_stocks", pool="api_pool")
+        def insider_top3_most_active_stocks_task(**context):
+            return extract_insider_top3_most_active_stocks(**context)
+        
+        create_folder = create_date_folder()
+        most_active = most_active_stocks_task(create_folder)
+        price_top3 = price_top3_most_active_stocks_task(most_active)
+        news_top3 = news_top3_most_active_stocks_task()
+        insider_top3 = insider_top3_most_active_stocks_task()
+
+        create_folder >> most_active >> price_top3 >> news_top3 >> insider_top3
+
     # Store task references
     holiday_check = holiday_check()
-    create_folder = create_date_folder()
-    most_active = most_active_stocks_task(create_folder)
-    price_top3 = price_top3_most_active_stocks_task(most_active)
-    news_top3 = news_top3_most_active_stocks_task()
-    insider_top3 = insider_top3_most_active_stocks_task()
+    extraction = extraction_group()
+
 
     # --- Task Dependencies ---
-    holiday_check >> [create_folder, end_task]
-    create_folder >> most_active >> price_top3 >> news_top3 >> insider_top3 >> end_task
+    holiday_check >> [extraction, end_task]
+    extraction >> end_task
 
 most_active_dag()
