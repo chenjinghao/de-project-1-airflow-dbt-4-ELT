@@ -72,15 +72,10 @@ def create_today_folder():
 
 def check_files_exist_in_folder():
     """
-    Check which files exist in today's folder and determine which task to start from.
+    Check which files exist in today's folder and determine which tasks to run.
     
     Returns:
-        str: Task ID to branch to based on existing files
-            - "extract_most_active_stocks" if most_active_stocks.json doesn't exist
-            - "price_top3_most_active_stocks" if only most_active_stocks.json exists
-            - "news_top3_most_active_stocks" if most_active + all price files exist
-            - "biz_info_top3_most_active_stocks" if most_active + price + all news files exist
-            - "skip_extraction" if all files exist
+        list[str]: List of task IDs to branch to.
     """
     client = _connect_database()
     BUCKET_NAME = "bronze"
@@ -93,7 +88,7 @@ def check_files_exist_in_folder():
         logging.info(f"Found {len(json_keys)} JSON files in {prefix}: {json_keys}")
     except Exception as exc:
         logging.exception("Failed to list objects for bucket=%s, prefix=%s", BUCKET_NAME, prefix)
-        return "extract_most_active_stocks"
+        return ["extract_most_active_stocks"]
 
     # Check for most_active_stocks.json
     most_active_file = f"{prefix_name}/most_active_stocks.json"
@@ -101,32 +96,37 @@ def check_files_exist_in_folder():
     
     if not has_most_active:
         logging.info("most_active_stocks.json does not exist. Starting from extract_most_active_stocks.")
-        return "extract_most_active_stocks"
+        return ["extract_most_active_stocks"]
+
+    tasks_to_run = []
     
     # Check for price files (expecting 3 files with pattern *_stocks_price.json)
     price_files = [f for f in json_keys if '/price/' in f and f.endswith('_stocks_price.json')]
     has_all_price = len(price_files) >= 3
     
     if not has_all_price:
-        logging.info(f"Found {len(price_files)} price files. Starting from price_top3_most_active_stocks.")
-        return "price_top3_most_active_stocks"
+        logging.info(f"Found {len(price_files)} price files. Adding price_top3_most_active_stocks to run list.")
+        tasks_to_run.append("price_top3_most_active_stocks")
     
     # Check for news files (expecting 3 files with pattern *_stocks_news.json)
     news_files = [f for f in json_keys if '/news/' in f and f.endswith('_stocks_news.json')]
     has_all_news = len(news_files) >= 3
     
     if not has_all_news:
-        logging.info(f"Found {len(news_files)} news files. Starting from news_top3_most_active_stocks.")
-        return "news_top3_most_active_stocks"
+        logging.info(f"Found {len(news_files)} news files. Adding news_top3_most_active_stocks to run list.")
+        tasks_to_run.append("news_top3_most_active_stocks")
     
     # Check for business_info files (expecting 3 files with pattern *_stocks_business_info.json)
     biz_files = [f for f in json_keys if '/business_info/' in f and f.endswith('_stocks_business_info.json')]
     has_all_biz = len(biz_files) >= 3
     
     if not has_all_biz:
-        logging.info(f"Found {len(biz_files)} business_info files. Starting from biz_info_top3_most_active_stocks.")
-        return "biz_info_top3_most_active_stocks"
+        logging.info(f"Found {len(biz_files)} business_info files. Adding biz_info_top3_most_active_stocks to run list.")
+        tasks_to_run.append("biz_info_top3_most_active_stocks")
+
+    if not tasks_to_run:
+        # All files exist, skip extraction
+        logging.info("All extraction files exist. Skipping extraction group.")
+        return ["skip_extraction"]
     
-    # All files exist, skip extraction
-    logging.info("All extraction files exist. Skipping extraction group.")
-    return "skip_extraction"
+    return tasks_to_run

@@ -70,13 +70,20 @@ def most_active_dag():
         @task.branch(task_id="check_existing_files", pool="api_pool")
         def check_existing_files(folder_path):
             """Check which files exist and determine where to start extraction"""
-            next_task = check_files_exist_in_folder()
+            next_tasks = check_files_exist_in_folder()
             
-            # Return full task path within the task group
-            if next_task == "skip_extraction":
-                return "Extraction_from_API.extraction_complete"
-            else:
-                return f"Extraction_from_API.{next_task}"
+            # Ensure it's a list
+            if not isinstance(next_tasks, list):
+                next_tasks = [next_tasks]
+
+            result_tasks = []
+            for task_id in next_tasks:
+                if task_id == "skip_extraction":
+                    result_tasks.append("Extraction_from_API.extraction_complete")
+                else:
+                    result_tasks.append(f"Extraction_from_API.{task_id}")
+
+            return result_tasks
     
         # Use pool to limit concurrent API calls
         @task(task_id="extract_most_active_stocks", pool="api_pool")
@@ -111,8 +118,12 @@ def most_active_dag():
         # Dependencies - branch to the appropriate starting point
         check_files >> [most_active, price_top3, news_top3, biz_info_top3, extraction_complete]
         
-        # Sequential flow for extraction tasks
-        most_active >> price_top3 >> news_top3 >> biz_info_top3 >> extraction_complete
+        # Parallel flow for extraction tasks
+        # most_active runs first (if triggered)
+        most_active >> [price_top3, news_top3, biz_info_top3]
+
+        # All three must finish before completion
+        [price_top3, news_top3, biz_info_top3] >> extraction_complete
 
 
     # Task Group for Loading to Database (Injection)
