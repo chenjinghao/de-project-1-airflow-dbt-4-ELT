@@ -41,9 +41,9 @@ class TestExtractBizInfo(unittest.TestCase):
 
     @patch('include.tasks.extract_stock_info._connect_database')
     @patch('include.tasks.extract_stock_info.BaseHook')
-    @patch('include.tasks.extract_stock_info.requests')
+    @patch('include.tasks.extract_stock_info.re')
     @patch('include.tasks.extract_stock_info.time')
-    def test_extract_biz_info(self, mock_time, mock_requests, mock_base_hook, mock_connect_db):
+    def test_extract_biz_info(self, mock_time, mock_re, mock_base_hook, mock_connect_db):
         # Setup Mocks
 
         # Mock BaseHook
@@ -59,10 +59,10 @@ class TestExtractBizInfo(unittest.TestCase):
         mock_client.put_object.return_value = mock_objw
         mock_connect_db.return_value = mock_client
 
-        # Mock requests
+        # Mock re (which is requests aliased)
         mock_response = MagicMock()
         mock_response.json.return_value = {"Symbol": "AAPL", "Name": "Apple Inc."}
-        mock_requests.get.return_value = mock_response
+        mock_re.get.return_value = mock_response
 
         # Mock Context
         mock_ti = MagicMock()
@@ -92,7 +92,7 @@ class TestExtractBizInfo(unittest.TestCase):
 
         # Check API calls
         # Should be called 3 times (for 3 stocks)
-        self.assertEqual(mock_requests.get.call_count, 3)
+        self.assertEqual(mock_re.get.call_count, 3)
 
         # Check put_object calls
         self.assertEqual(mock_client.put_object.call_count, 3)

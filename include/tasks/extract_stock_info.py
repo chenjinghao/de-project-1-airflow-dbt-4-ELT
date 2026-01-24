@@ -1,6 +1,6 @@
 import json
 from io import BytesIO
-import requests
+import requests as re
 import logging
 from airflow.sdk.bases.hook import BaseHook
 from airflow.exceptions import AirflowException
@@ -22,7 +22,7 @@ def extract_most_active_stocks(folder_path, **context):
     url = f'{api.host}'
     
     try:
-        response = requests.get(
+        response = re.get(
             url,
             params={'function': 'TOP_GAINERS_LOSERS', 
                     'apikey': api.password},
@@ -48,7 +48,7 @@ def extract_most_active_stocks(folder_path, **context):
         logging.info(f"Stored most active stocks data at {objw.bucket_name}/{folder_name}/most_active_stocks.json")
         return f"{objw.bucket_name}/{folder_name}/most_active_stocks.json"
 
-    except requests.exceptions.RequestException as e:
+    except re.exceptions.RequestException as e:
         logging.error(f"Failed to extract most active stocks data: {e}")
         raise AirflowException("Most active stocks API request failed.")
     
@@ -79,7 +79,7 @@ def extract_price_top3_most_active_stocks(file_path, **context):
         context['ti'].xcom_push(key='top3_stocks', value=top3_stocks)
 
         for symbol in top3_stocks:
-            stock_response = requests.get(
+            stock_response = re.get(
                 url,
                 params={'function': 'TIME_SERIES_DAILY', 
                         'symbol': symbol,
@@ -101,7 +101,7 @@ def extract_price_top3_most_active_stocks(file_path, **context):
             time.sleep(2)  # To respect API rate limits
         return f"All price data for top 3 most active stocks stored in {bucket_name}/{folder_name}/price/"
 
-    except requests.exceptions.RequestException as e:
+    except re.exceptions.RequestException as e:
         logging.error(f"Failed to extract price data: {e}")
         raise AirflowException("Price data API request failed.")
     
@@ -129,7 +129,7 @@ def extract_news_top3_most_active_stocks(**context):
     folder_name = folder_path.split('/')[1]
     try:
         for symbol in top3_stocks:
-            response = requests.get(
+            response = re.get(
                 url,
                 params={'function': 'NEWS_SENTIMENT', 
                         'tickers': symbol,
@@ -152,7 +152,7 @@ def extract_news_top3_most_active_stocks(**context):
             time.sleep(2)
         return f"All news data for top 3 most active stocks stored in {bucket_name}/{folder_name}/news/"
     
-    except requests.exceptions.RequestException as e:
+    except re.exceptions.RequestException as e:
         logging.error(f"Failed to extract news data: {e}")
         raise AirflowException("News data API request failed.")
 
@@ -180,7 +180,7 @@ def extract_biz_info_top3_most_active_stocks(**context):
     folder_name = folder_path.split('/')[1]
     try:
         for symbol in top3_stocks:
-            response = requests.get(
+            response = re.get(
                 url,
                 params={'function': 'OVERVIEW', 
                         'symbol': symbol,
@@ -202,7 +202,7 @@ def extract_biz_info_top3_most_active_stocks(**context):
             logging.info(f"Stored business info data for {symbol} at {objw.bucket_name}/{folder_name}/business_info/{top3_stocks.index(symbol)}_{symbol}_stocks_business_info.json")
             time.sleep(2)  # To respect API rate limits
         return f"All business info data for top 3 most active stocks stored in {bucket_name}/{folder_name}/business_info/"
-    except requests.exceptions.RequestException as e:
+    except re.exceptions.RequestException as e:
         logging.error(f"Failed to extract business info data: {e}")
         raise AirflowException("Business info data API request failed.")
 
@@ -230,7 +230,7 @@ def extract_biz_info_top3_most_active_stocks(**context):
 #     folder_name = folder_path.split('/')[1]
 #     try:
 #         for symbol in top3_stocks:
-#             response = requests.get(
+#             response = re.get(
 #                 url,
 #                 params={'function': 'INSIDER_TRANSACTIONS', 
 #                         'symbol': symbol,
@@ -253,6 +253,6 @@ def extract_biz_info_top3_most_active_stocks(**context):
 #             time.sleep(2)  # To respect API rate limits
 #         return f"All insider data for top 3 most active stocks stored in {bucket_name}/{folder_name}/insider/"
     
-#     except requests.exceptions.RequestException as e:
+#     except re.exceptions.RequestException as e:
 #         logging.error(f"Failed to extract insider data: {e}")
 #         raise AirflowException("Insider data API request failed.")
