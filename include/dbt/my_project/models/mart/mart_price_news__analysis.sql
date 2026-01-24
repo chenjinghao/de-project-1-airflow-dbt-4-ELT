@@ -1,5 +1,6 @@
 {{config(
     materialized='incremental',
+    unique_key=['date', 'ticker'],
     tags=['mart']
 )}}
 

@@ -1,5 +1,6 @@
 {{config(
-    materialized='incremental'
+    materialized='incremental',
+    unique_key=['date', 'ticker']
 )}}
 
 WITH most_active_stocks AS (
