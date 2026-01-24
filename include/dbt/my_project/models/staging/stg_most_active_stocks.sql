@@ -1,5 +1,5 @@
 {{config(
-    materialized='table'
+    materialized='incremental'
 )}}
 
 WITH most_active_stocks AS (
@@ -7,6 +7,9 @@ WITH most_active_stocks AS (
         date,
         most_active
     FROM {{ source('stocks_db', 'raw_most_active_stocks') }}
+    {% if is_incremental() %}
+    WHERE date > (SELECT max(date) FROM {{ this }})
+    {% endif %}
 ),
 
 expanded AS (
