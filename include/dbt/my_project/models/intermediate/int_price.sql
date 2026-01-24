@@ -1,6 +1,7 @@
 {{
     config(
         materialized='incremental',
+        unique_key=['extraction_date', 'symbol'],
         tags=['intermediate']
     )
 }}

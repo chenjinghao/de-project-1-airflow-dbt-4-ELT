@@ -1,6 +1,7 @@
 {{
     config(
         materialized='incremental',
+        unique_key=['extraction_date', 'mentioned_ticker'],
         tags=['intermediate']
     )
 }}
