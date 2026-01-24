@@ -21,8 +21,8 @@ services:
     volumes:
       - ./include/data/minio:/data
     ports:
-      - 9000:9000
-      - 9001:9001
+      - 19000:9000
+      - 19001:9001
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
@@ -97,22 +97,24 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'  # enable multi-user UI in single instance
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
       - "5800:80"
     volumes:
       - ./include/data/pgadmin:/var/lib/pgadmin
     networks:
       - airflow
+    user: "root"
+    
   dbt:
     image: ghcr.io/dbt-labs/dbt-postgres:1.9.latest
     container_name: dbt_container
-    volumes:
-      - ./dbt/data_transformation_dbt_project:/usr/app/dbt
-      - ./dbt/profiles.yml:/root/.dbt/profiles.yml
-    working_dir: /usr/app/dbt
+    working_dir: /usr/app/
     environment:
-      DBT_PROFILES_DIR: "/root/.dbt"
+      DBT_PROFILES_DIR: /root/.dbt
+    volumes:
+      - ./include/dbt/my_project:/usr/app/
+      - ./include/dbt:/root/.dbt
     depends_on:
       - database
     networks:

@@ -4,8 +4,13 @@ apache-airflow-providers-amazon
 apache-airflow-providers-docker
 apache-airflow-providers-postgres
 apache-airflow-providers-slack
+apache-airflow-providers-common-sql
 astro-sdk-python
 minio
 pandas
 pandas_market_calendars
 pendulum
+dlt
+astronomer-cosmos
+dbt-core
+dbt-postgres

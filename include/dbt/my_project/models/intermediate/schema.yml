@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: int_price
+    description: "Aggregated price statistics per symbol over the past 100 days of data"
+    config:
+      tags: ['intermediate']
+    columns:
+      - name: extraction_date
+        description: "Date the price data was extracted"
+        tests:
+          - not_null
+      - name: symbol
+        description: "Stock ticker symbol"
+        tests:
+          - not_null
+      - name: avg_close_price_past_100days
+        description: "Average closing price over the data window"
+        tests:
+          - not_null
+      - name: max_price_past_100days
+        description: "Maximum high price over the data window"
+        tests:
+          - not_null
+      - name: min_price_past_100days
+        description: "Minimum low price over the data window"
+        tests:
+          - not_null
+      - name: avg_volume_past_100days
+        description: "Average trading volume over the data window"
+      - name: max_volume_past_100days
+        description: "Maximum trading volume over the data window"
+      - name: min_volume_past_100days
+        description: "Minimum trading volume over the data window"
+
+    tests:
+      - unique:
+          column_name: "(extraction_date || '-' || symbol)"
+
+  - name: int_news__analysis
+    description: "Sentiment analysis summary per ticker per extraction date"
+    config:
+      tags: ['intermediate']
+    columns:
+      - name: extraction_date
+        description: "Date the news data was extracted"
+        tests:
+          - not_null
+      - name: mentioned_ticker
+        description: "Stock ticker mentioned in news articles"
+        tests:
+          - not_null
+      - name: bullish_count
+        description: "Count of articles with Bullish sentiment"
+        tests:
+          - not_null
+      - name: bearish_count
+        description: "Count of articles with Bearish sentiment"
+        tests:
+          - not_null
+      - name: neutral_count
+        description: "Count of articles with Neutral sentiment"
+        tests:
+          - not_null
+      - name: somewhat_bullish_count
+        description: "Count of articles with Somewhat-Bullish sentiment"
+        tests:
+          - not_null
+      - name: somewhat_bearish_count
+        description: "Count of articles with Somewhat-Bearish sentiment"
+        tests:
+          - not_null
+      - name: avg_sentiment_score
+        description: "Average sentiment score across all articles for this ticker"
+        tests:
+          - not_null
+
+    tests:
+      - unique:
+          column_name: "(extraction_date || '-' || mentioned_ticker)"

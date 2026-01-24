@@ -1,0 +1,27 @@
+version: 2
+
+sources:
+  - name: stocks_db
+    description: "Source tables from stocks_db"
+    database: stocks_db
+    schema: public
+    tables:
+      - name: raw_most_active_stocks
+        description: "Raw data table containing most active stocks from external source."
+        columns:
+          - name: date
+            description: "The date of the stock data."
+          - name: most_active
+            description: "JSON field containing most active stocks information."
+          - name: price1
+            description: "1st most active stock in json format."
+          - name: price2
+            description: "2nd most active stock in json format."
+          - name: price3
+            description: "3rd most active stock in json format."
+          - name: new1
+            description: "1st most active stock's news in json format."
+          - name: new2
+            description: "2nd most active stock's news in json format."
+          - name: new3
+            description: "3rd most active stock's news in json format."

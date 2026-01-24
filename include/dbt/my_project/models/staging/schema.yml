@@ -1,0 +1,91 @@
+version: 2
+
+models:
+  - name: stg_most_active_stocks
+    description: "Top 3 most actively traded stocks per day, ranked by volume"
+    columns:
+      - name: date
+        description: "Extraction/observation date"
+        tests:
+          - not_null
+      - name: ticker
+        description: "Stock ticker symbol"
+        tests:
+          - not_null
+      - name: price
+        description: "Stock price at time of observation"
+      - name: volume
+        description: "Trading volume"
+        tests:
+          - not_null
+      - name: change_amount
+        description: "Absolute price change"
+      - name: change_percentage
+        description: "Percentage price change"
+      - name: rn
+        description: "Rank by volume within each date (1-3)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3]
+
+  - name: stg_news
+    description: "News articles with ticker sentiment data extracted from raw JSON"
+    columns:
+      - name: extraction_date
+        description: "Date the news data was extracted"
+        tests:
+          - not_null
+      - name: url
+        description: "URL of the news article"
+      - name: title
+        description: "Article title"
+      - name: summary
+        description: "Article summary text"
+      - name: time_published_date
+        description: "Date the article was published"
+      - name: mentioned_ticker
+        description: "Stock ticker mentioned in the article"
+      - name: ticker_relevance_score
+        description: "Relevance score of ticker to article (0-1)"
+      - name: ticker_sentiment_label
+        description: "Sentiment label (Bullish, Bearish, Neutral)"
+        tests:
+          - accepted_values:
+              values: ['Bullish', 'Somewhat-Bullish', 'Neutral', 'Somewhat-Bearish', 'Bearish']
+              config:
+                severity: warn
+      - name: ticker_sentiment_score
+        description: "Numeric sentiment score"
+
+  - name: stg_price
+    description: "Daily OHLCV price data for stocks extracted from raw JSON"
+    columns:
+      - name: extraction_date
+        description: "Date the price data was extracted"
+        tests:
+          - not_null
+      - name: symbol
+        description: "Stock ticker symbol"
+        tests:
+          - not_null
+      - name: price_date
+        description: "Trading date for the price record"
+        tests:
+          - not_null
+      - name: open_price
+        description: "Opening price"
+      - name: high_price
+        description: "Highest price during the day"
+      - name: low_price
+        description: "Lowest price during the day"
+      - name: close_price
+        description: "Closing price"
+      - name: volume
+        description: "Trading volume"
+        tests:
+          - not_null
+
+    tests:
+      - unique:
+          column_name: "(extraction_date || '-' || symbol || '-' || price_date)"

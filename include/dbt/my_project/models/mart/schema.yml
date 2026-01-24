@@ -1,0 +1,135 @@
+version: 2
+
+models:
+  - name: mart_price_vol_chgn
+    description: "Daily price changes and volume differences for all tracked stocks"
+    config:
+      tags: ['mart']
+    columns:
+      - name: extraction_date
+        description: "Date the data was extracted"
+        data_test:
+          - not_null
+      - name: symbol
+        description: "Stock ticker symbol"
+        data_test:
+          - not_null
+      - name: price_date
+        description: "Trading date for the price record"
+        data_test:
+          - not_null
+      - name: pct_daily_change
+        description: "Percentage daily price change ((close - open) / open * 100)"
+        data_test:
+          - not_null
+      - name: diff_vol
+        description: "Volume difference compared to previous day"
+        data_test:
+          - not_null
+
+    data_test:
+      - unique:
+          column_name: "(extraction_date || '-' || symbol || '-' || price_date)"
+
+  - name: mart_price_news__analysis
+    description: "Combined price metrics and news sentiment analysis for most active stocks"
+    config:
+      tags: ['mart']
+    columns:
+      - name: date
+        description: "Trading/extraction date"
+        data_test:
+          - not_null
+      - name: ticker
+        description: "Stock ticker symbol"
+        data_test:
+          - not_null
+      - name: price
+        description: "Current stock price"
+      - name: volume
+        description: "Trading volume"
+        data_test:
+          - not_null
+      - name: change_amount
+        description: "Absolute price change"
+      - name: change_percentage
+        description: "Percentage price change"
+      - name: rn
+        description: "Rank by volume within each date (1-3)"
+        data_test:
+          - accepted_values:
+            arguments:
+              values: [1, 2, 3]
+      - name: avg_close_price_past_100days
+        description: "Average closing price over past 100 days"
+      - name: max_price_past_100days
+        description: "Maximum high price over past 100 days"
+      - name: min_price_past_100days
+        description: "Minimum low price over past 100 days"
+      - name: avg_volume_past_100days
+        description: "Average trading volume over past 100 days"
+      - name: max_volume_past_100days
+        description: "Maximum trading volume over past 100 days"
+      - name: min_volume_past_100days
+        description: "Minimum trading volume over past 100 days"
+      - name: price_vs_100days_avg
+        description: "Indicator if current price is above/below 100-day average"
+        data_test:
+          - accepted_values:
+              values: ['Above Average 100 Days price', 'Below Average 100 Days price']
+      - name: volume_vs_100days_avg
+        description: "Indicator if current volume is above/below 100-day average"
+        data_test:
+          - accepted_values:
+              values: ['Above Average 100 Days volume', 'Below Average 100 Days volume']
+      - name: bullish_count
+        description: "Count of bullish sentiment news articles"
+      - name: bearish_count
+        description: "Count of bearish sentiment news articles"
+      - name: neutral_count
+        description: "Count of neutral sentiment news articles"
+      - name: somewhat_bullish_count
+        description: "Count of somewhat bullish sentiment news articles"
+      - name: somewhat_bearish_count
+        description: "Count of somewhat bearish sentiment news articles"
+      - name: avg_sentiment_score
+        description: "Average sentiment score across all news articles"
+
+    data_test:
+      - unique:
+          column_name: "(date || '-' || ticker)"
+
+  - name: mart_news__recent
+    description: "Recent news articles (past 7 days) for today's most active stocks"
+    config:
+      tags: ['mart']
+    columns:
+      - name: extraction_date
+        description: "Date the news data was extracted"
+        data_test:
+          - not_null
+      - name: url
+        description: "URL of the news article"
+      - name: title
+        description: "Article title"
+      - name: summary
+        description: "Article summary text"
+      - name: time_published_date
+        description: "Date the article was published"
+        data_test:
+          - not_null
+      - name: mentioned_ticker
+        description: "Stock ticker mentioned in the article"
+        data_test:
+          - not_null
+      - name: ticker_relevance_score
+        description: "Relevance score of ticker to article (0-1)"
+      - name: ticker_sentiment_label
+        description: "Sentiment label (Bullish, Bearish, Neutral, etc.)"
+        data_test:
+          - accepted_values:
+              values: ['Bullish', 'Somewhat-Bullish', 'Neutral', 'Somewhat-Bearish', 'Bearish']
+              config:
+                severity: warn
+      - name: ticker_sentiment_score
+        description: "Numeric sentiment score"
