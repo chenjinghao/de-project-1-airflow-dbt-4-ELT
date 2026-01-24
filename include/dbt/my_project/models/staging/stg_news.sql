@@ -1,10 +1,22 @@
 -- models/staging/stg_news.sql
-WITH unioned AS (
-  SELECT date, new1 AS news_json FROM {{ source('stocks_db', 'raw_most_active_stocks') }}
+{{ config(
+    materialized='incremental'
+) }}
+
+WITH source_data AS (
+  SELECT *
+  FROM {{ source('stocks_db', 'raw_most_active_stocks') }}
+  {% if is_incremental() %}
+  WHERE date > (SELECT max(extraction_date) FROM {{ this }})
+  {% endif %}
+),
+
+unioned AS (
+  SELECT date, new1 AS news_json FROM source_data
   UNION ALL
-  SELECT date, new2 FROM {{ source('stocks_db', 'raw_most_active_stocks') }}
+  SELECT date, new2 FROM source_data
   UNION ALL
-  SELECT date, new3 FROM {{ source('stocks_db', 'raw_most_active_stocks') }}
+  SELECT date, new3 FROM source_data
 ),
 
 parsed AS (
