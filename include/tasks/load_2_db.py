@@ -193,6 +193,18 @@ def load_2_db_biz_lookup():
 
     _ensure_lookup_table(cur, table_name=BIZ_LOOKUP_TABLE_NAME)
 
+    cols = BIZ_LOOKUP_COLUMNS
+    insert_sql = sql.SQL("""
+        INSERT INTO {} ({})
+        VALUES ({})
+        ON CONFLICT ({}) DO NOTHING
+    """).format(
+        sql.Identifier(BIZ_LOOKUP_TABLE_NAME),
+        sql.SQL(", ").join(map(sql.Identifier, cols)),
+        sql.SQL(", ").join(sql.Placeholder() for _ in cols),
+        sql.Identifier("Symbol"),
+    )
+
     for key in json_keys:
         data = _load_json(client, BUCKET_NAME, key)
 
@@ -202,19 +214,7 @@ def load_2_db_biz_lookup():
                 logging.warning(f"Skipping invalid record in {key}: {record}")
                 continue
 
-            cols = BIZ_LOOKUP_COLUMNS
             vals = [_normalize_value(record.get(c)) for c in cols]
-
-            insert_sql = sql.SQL("""
-                INSERT INTO {} ({})
-                VALUES ({})
-                ON CONFLICT ({}) DO NOTHING
-            """).format(
-                sql.Identifier(BIZ_LOOKUP_TABLE_NAME),
-                sql.SQL(", ").join(map(sql.Identifier, cols)),
-                sql.SQL(", ").join(sql.Placeholder() for _ in cols),
-                sql.Identifier("Symbol"),
-            )
 
             cur.execute(insert_sql, vals)
 
