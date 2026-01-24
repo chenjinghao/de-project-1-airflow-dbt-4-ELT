@@ -1,6 +1,6 @@
 {{
     config(
-        materialized='table',
+        materialized='incremental',
         tags=['intermediate']
     )
 }}
@@ -8,6 +8,9 @@
 WITH price AS (
     SELECT *
     FROM {{ ref('stg_price')}}
+    {% if is_incremental() %}
+    WHERE extraction_date > (SELECT max(extraction_date) FROM {{ this }})
+    {% endif %}
 ),
 
 final AS (

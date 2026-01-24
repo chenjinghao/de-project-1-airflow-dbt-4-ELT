@@ -1,11 +1,14 @@
 {{config(
-    materialized='table',
+    materialized='incremental',
     tags=['mart']
 )}}
 
 WITH price_extraction_date AS (
     SELECT *
     FROM {{ ref('stg_most_active_stocks') }}
+    {% if is_incremental() %}
+    WHERE date > (SELECT max(date) FROM {{ this }})
+    {% endif %}
 ),
 
 price_aggregated AS (
