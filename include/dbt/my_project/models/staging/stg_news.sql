@@ -1,5 +1,6 @@
 -- models/staging/stg_news.sql
-{{ config(
+{{ 
+  config(
     materialized='incremental',
     unique_key=['extraction_date', 'url', 'mentioned_ticker']
 ) }}

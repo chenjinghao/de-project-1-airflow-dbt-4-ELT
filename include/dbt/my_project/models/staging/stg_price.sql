@@ -1,5 +1,6 @@
 -- models/staging/stg_prices.sql
-{{ config(
+{{ 
+  config(
     materialized='incremental',
     unique_key=['extraction_date', 'symbol', 'price_date']
 ) }}
