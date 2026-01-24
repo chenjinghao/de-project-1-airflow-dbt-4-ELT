@@ -1,6 +1,7 @@
 {{
     config(
-        materialized='table',
+        materialized='incremental',
+        unique_key=['extraction_date', 'url', 'mentioned_ticker'],
         tags=['mart']
     )
 }}
@@ -8,6 +9,9 @@
 WITH news AS (
     SELECT *
     FROM {{ ref('stg_news')}}
+    {% if is_incremental() %}
+    WHERE extraction_date > (SELECT max(extraction_date) FROM {{ this }})
+    {% endif %}
 ),
 
 most_active_stocks AS (
