@@ -1,7 +1,7 @@
 import pandas as pd
 import logging
 import json
-from psycopg2.extras import Json
+from psycopg2.extras import Json, execute_values
 from psycopg2 import sql
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from include.connection.connect_database import _connect_database
@@ -196,15 +196,15 @@ def load_2_db_biz_lookup():
     cols = BIZ_LOOKUP_COLUMNS
     insert_sql = sql.SQL("""
         INSERT INTO {} ({})
-        VALUES ({})
+        VALUES %s
         ON CONFLICT ({}) DO NOTHING
     """).format(
         sql.Identifier(BIZ_LOOKUP_TABLE_NAME),
         sql.SQL(", ").join(map(sql.Identifier, cols)),
-        sql.SQL(", ").join(sql.Placeholder() for _ in cols),
         sql.Identifier("Symbol"),
     )
 
+    all_vals = []
     for key in json_keys:
         data = _load_json(client, BUCKET_NAME, key)
 
@@ -215,8 +215,10 @@ def load_2_db_biz_lookup():
                 continue
 
             vals = [_normalize_value(record.get(c)) for c in cols]
+            all_vals.append(vals)
 
-            cur.execute(insert_sql, vals)
+    if all_vals:
+        execute_values(cur, insert_sql.as_string(conn), all_vals)
 
     conn.commit()
     cur.close()
