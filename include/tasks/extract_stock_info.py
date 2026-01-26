@@ -6,6 +6,7 @@ from airflow.sdk.bases.hook import BaseHook
 from airflow.exceptions import AirflowException
 from include.connection.connect_database import _connect_database
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 
@@ -78,30 +79,39 @@ def extract_price_top3_most_active_stocks(file_path, **context):
         top3_stocks = [stock['ticker'] for stock in most_active_stocks[:3]]
         context['ti'].xcom_push(key='top3_stocks', value=top3_stocks)
 
-        for symbol in top3_stocks:
-            stock_response = re.get(
-                url,
-                params={'function': 'TIME_SERIES_DAILY', 
-                        'symbol': symbol,
-                        'apikey': api.password},
-                timeout=10
-            )
-            stock_response.raise_for_status()
-            price_data = stock_response.json()
+        def fetch_and_store(symbol):
+            try:
+                stock_response = re.get(
+                    url,
+                    params={'function': 'TIME_SERIES_DAILY',
+                            'symbol': symbol,
+                            'apikey': api.password},
+                    timeout=10
+                )
+                stock_response.raise_for_status()
+                price_data = stock_response.json()
 
-            data = json.dumps(price_data, ensure_ascii=False).encode('utf-8')
+                data = json.dumps(price_data, ensure_ascii=False).encode('utf-8')
 
-            objw = client.put_object(
-                bucket_name=bucket_name,
-                object_name=f'{folder_name}/price/{top3_stocks.index(symbol)}_{symbol}_stocks_price.json',
-                data=BytesIO(data),
-                length=len(data)
-            )
-            logging.info(f"Stored price data for {symbol} at {objw.bucket_name}/{folder_name}/price/{top3_stocks.index(symbol)}_{symbol}_stocks_price.json")
-            time.sleep(2)  # To respect API rate limits
+                objw = client.put_object(
+                    bucket_name=bucket_name,
+                    object_name=f'{folder_name}/price/{top3_stocks.index(symbol)}_{symbol}_stocks_price.json',
+                    data=BytesIO(data),
+                    length=len(data)
+                )
+                logging.info(f"Stored price data for {symbol} at {objw.bucket_name}/{folder_name}/price/{top3_stocks.index(symbol)}_{symbol}_stocks_price.json")
+            except Exception as e:
+                logging.error(f"Error processing {symbol}: {e}")
+                raise e
+
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = [executor.submit(fetch_and_store, symbol) for symbol in top3_stocks]
+            for future in as_completed(futures):
+                future.result()
+
         return f"All price data for top 3 most active stocks stored in {bucket_name}/{folder_name}/price/"
 
-    except re.exceptions.RequestException as e:
+    except Exception as e:
         logging.error(f"Failed to extract price data: {e}")
         raise AirflowException("Price data API request failed.")
     
