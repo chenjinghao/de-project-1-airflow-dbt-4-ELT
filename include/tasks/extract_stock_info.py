@@ -106,7 +106,7 @@ def extract_price_top3_most_active_stocks(file_path, **context):
         raise AirflowException("Price data API request failed.")
     
 def extract_news_top3_most_active_stocks(**context):
-    """Placeholder for news extraction function for top 3 most active stocks"""
+    """Extract news sentiment data for top 3 most active stocks from Alpha Vantage API and store in MinIO"""
     logging.info("News extraction for top 3 most active stocks.")
     
     client = _connect_database()
