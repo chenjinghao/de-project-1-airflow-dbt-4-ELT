@@ -141,7 +141,7 @@ def most_active_dag():
 
     profile_config = ProfileConfig(
         profile_name="my_project",
-        target_name="dev",
+        target_name=os.getenv("DBT_TARGET", "dev"),
         profile_mapping=PostgresUserPasswordProfileMapping(
             conn_id=CONNECTION_ID,
             profile_args={"schema": "public"},
