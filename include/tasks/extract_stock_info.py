@@ -6,6 +6,7 @@ from airflow.sdk.bases.hook import BaseHook
 from airflow.exceptions import AirflowException
 from include.connection.connect_database import _connect_database
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 
@@ -178,8 +179,9 @@ def extract_biz_info_top3_most_active_stocks(**context):
         folder_path = context['ti'].xcom_pull(key='return_value', task_ids='create_today_folder')
     bucket_name = folder_path.split('/')[0]
     folder_name = folder_path.split('/')[1]
-    try:
-        for symbol in top3_stocks:
+
+    def process_symbol(symbol):
+        try:
             response = re.get(
                 url,
                 params={'function': 'OVERVIEW', 
@@ -200,8 +202,17 @@ def extract_biz_info_top3_most_active_stocks(**context):
             )
 
             logging.info(f"Stored business info data for {symbol} at {objw.bucket_name}/{folder_name}/business_info/{top3_stocks.index(symbol)}_{symbol}_stocks_business_info.json")
-            time.sleep(2)  # To respect API rate limits
+        except re.exceptions.RequestException as e:
+            logging.error(f"Failed to extract business info data for {symbol}: {e}")
+            raise
+
+    try:
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = [executor.submit(process_symbol, symbol) for symbol in top3_stocks]
+            for future in as_completed(futures):
+                future.result()
+
         return f"All business info data for top 3 most active stocks stored in {bucket_name}/{folder_name}/business_info/"
-    except re.exceptions.RequestException as e:
+    except Exception as e:
         logging.error(f"Failed to extract business info data: {e}")
         raise AirflowException("Business info data API request failed.")
