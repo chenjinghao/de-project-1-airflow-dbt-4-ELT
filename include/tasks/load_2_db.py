@@ -209,23 +209,20 @@ def load_2_db_biz_lookup():
     # Convert to string as required by execute_values when using Composed objects
     insert_query_str = insert_query.as_string(conn)
 
-    all_vals = []
+    def generate_records():
+        for key in json_keys:
+            data = _load_json(client, BUCKET_NAME, key)
 
-    for key in json_keys:
-        data = _load_json(client, BUCKET_NAME, key)
+            records = data if isinstance(data, list) else [data]
+            for record in records:
+                if not isinstance(record, dict) or "Symbol" not in record:
+                    logging.warning(f"Skipping invalid record in {key}: {record}")
+                    continue
 
-        records = data if isinstance(data, list) else [data]
-        for record in records:
-            if not isinstance(record, dict) or "Symbol" not in record:
-                logging.warning(f"Skipping invalid record in {key}: {record}")
-                continue
+                yield [_normalize_value(record.get(c)) for c in cols]
 
-            vals = [_normalize_value(record.get(c)) for c in cols]
-            all_vals.append(vals)
-
-    if all_vals:
-        execute_values(cur, insert_query_str, all_vals)
-        logging.info(f"Inserted {len(all_vals)} records into {BIZ_LOOKUP_TABLE_NAME}.")
+    execute_values(cur, insert_query_str, generate_records())
+    logging.info(f"Inserted records into {BIZ_LOOKUP_TABLE_NAME}.")
 
     conn.commit()
     cur.close()
