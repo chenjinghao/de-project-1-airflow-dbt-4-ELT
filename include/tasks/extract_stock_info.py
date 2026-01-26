@@ -6,6 +6,7 @@ from airflow.sdk.bases.hook import BaseHook
 from airflow.exceptions import AirflowException
 from include.connection.connect_database import _connect_database
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 
 
@@ -127,29 +128,32 @@ def extract_news_top3_most_active_stocks(**context):
         folder_path = context['ti'].xcom_pull(key='return_value', task_ids='create_today_folder')
     bucket_name = folder_path.split('/')[0]
     folder_name = folder_path.split('/')[1]
+
+    def _process_stock_news(symbol):
+        response = re.get(
+            url,
+            params={'function': 'NEWS_SENTIMENT',
+                    'tickers': symbol,
+                    'apikey': api.password},
+            timeout=10
+        )
+        response.raise_for_status()
+        news_data = response.json()
+
+        data = json.dumps(news_data, ensure_ascii=False).encode('utf-8')
+
+        objw = client.put_object(
+            bucket_name=bucket_name,
+            object_name=f'{folder_name}/news/{top3_stocks.index(symbol)}_{symbol}_stocks_news.json',
+            data=BytesIO(data),
+            length=len(data)
+        )
+
+        logging.info(f"Stored news data for {symbol} at {objw.bucket_name}/{folder_name}/news/{top3_stocks.index(symbol)}_{symbol}_stocks_news.json")
+
     try:
-        for symbol in top3_stocks:
-            response = re.get(
-                url,
-                params={'function': 'NEWS_SENTIMENT', 
-                        'tickers': symbol,
-                        'apikey': api.password},
-                timeout=10
-            )
-            response.raise_for_status()
-            news_data = response.json()
-
-            data = json.dumps(news_data, ensure_ascii=False).encode('utf-8')
-
-            objw = client.put_object(
-                bucket_name=bucket_name,
-                object_name=f'{folder_name}/news/{top3_stocks.index(symbol)}_{symbol}_stocks_news.json',
-                data=BytesIO(data),
-                length=len(data)
-            )
-
-            logging.info(f"Stored news data for {symbol} at {objw.bucket_name}/{folder_name}/news/{top3_stocks.index(symbol)}_{symbol}_stocks_news.json")
-            time.sleep(2)
+        with ThreadPoolExecutor() as executor:
+            list(executor.map(_process_stock_news, top3_stocks))
         return f"All news data for top 3 most active stocks stored in {bucket_name}/{folder_name}/news/"
     
     except re.exceptions.RequestException as e:
