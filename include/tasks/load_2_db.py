@@ -1,6 +1,7 @@
 import pandas as pd
 import logging
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from psycopg2.extras import Json, execute_values
 from psycopg2 import sql
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -63,22 +64,30 @@ def load_to_db():
     }
 
     # Map files to columns by filename patterns
-    for key in json_keys:
-        data = _load_json(client, BUCKET_NAME, key)
-        if key.endswith("most_active_stocks.json"):
-            cols["most_active"] = Json(data)
-        elif "/price/0_" in key:
-            cols["price1"] = Json(data)
-        elif "/price/1_" in key:
-            cols["price2"] = Json(data)
-        elif "/price/2_" in key:
-            cols["price3"] = Json(data)
-        elif "/news/0_" in key:
-            cols["new1"] = Json(data)
-        elif "/news/1_" in key:
-            cols["new2"] = Json(data)
-        elif "/news/2_" in key:
-            cols["new3"] = Json(data)
+    # Parallelize file fetching
+    with ThreadPoolExecutor() as executor:
+        future_to_key = {executor.submit(_load_json, client, BUCKET_NAME, key): key for key in json_keys}
+        for future in as_completed(future_to_key):
+            key = future_to_key[future]
+            try:
+                data = future.result()
+                if key.endswith("most_active_stocks.json"):
+                    cols["most_active"] = Json(data)
+                elif "/price/0_" in key:
+                    cols["price1"] = Json(data)
+                elif "/price/1_" in key:
+                    cols["price2"] = Json(data)
+                elif "/price/2_" in key:
+                    cols["price3"] = Json(data)
+                elif "/news/0_" in key:
+                    cols["new1"] = Json(data)
+                elif "/news/1_" in key:
+                    cols["new2"] = Json(data)
+                elif "/news/2_" in key:
+                    cols["new3"] = Json(data)
+            except Exception as exc:
+                logging.error(f'{key} generated an exception: {exc}')
+                raise exc
 
     cur.execute(
         f"""
@@ -210,16 +219,22 @@ def load_2_db_biz_lookup():
     insert_query_str = insert_query.as_string(conn)
 
     def generate_records():
-        for key in json_keys:
-            data = _load_json(client, BUCKET_NAME, key)
+        with ThreadPoolExecutor() as executor:
+            future_to_key = {executor.submit(_load_json, client, BUCKET_NAME, key): key for key in json_keys}
+            for future in as_completed(future_to_key):
+                key = future_to_key[future]
+                try:
+                    data = future.result()
+                    records = data if isinstance(data, list) else [data]
+                    for record in records:
+                        if not isinstance(record, dict) or "Symbol" not in record:
+                            logging.warning(f"Skipping invalid record in {key}: {record}")
+                            continue
 
-            records = data if isinstance(data, list) else [data]
-            for record in records:
-                if not isinstance(record, dict) or "Symbol" not in record:
-                    logging.warning(f"Skipping invalid record in {key}: {record}")
-                    continue
-
-                yield [_normalize_value(record.get(c)) for c in cols]
+                        yield [_normalize_value(record.get(c)) for c in cols]
+                except Exception as exc:
+                    logging.error(f'{key} generated an exception: {exc}')
+                    raise exc
 
     execute_values(cur, insert_query_str, generate_records())
     logging.info(f"Inserted records into {BIZ_LOOKUP_TABLE_NAME}.")
