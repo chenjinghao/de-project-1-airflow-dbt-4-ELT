@@ -6,7 +6,11 @@
 ) }}
 
 WITH source_data AS (
-  SELECT *
+  SELECT
+    date,
+    price1,
+    price2,
+    price3
   FROM {{ source('stocks_db', 'raw_most_active_stocks') }}
   {% if is_incremental() %}
   WHERE date > (SELECT max(extraction_date) FROM {{ this }})
@@ -14,11 +18,11 @@ WITH source_data AS (
 ),
 
 unioned AS (
-  SELECT date, price1 AS price_json FROM source_data
+  SELECT date, price1 AS price_json FROM source_data WHERE price1 IS NOT NULL
   UNION ALL
-  SELECT date, price2 FROM source_data
+  SELECT date, price2 FROM source_data WHERE price2 IS NOT NULL
   UNION ALL
-  SELECT date, price3 FROM source_data
+  SELECT date, price3 FROM source_data WHERE price3 IS NOT NULL
 ),
 
 parsed AS (
@@ -26,7 +30,6 @@ parsed AS (
     date AS extraction_date,
     price_json::jsonb AS pj
   FROM unioned
-  WHERE price_json IS NOT NULL
 ),
 
 expanded AS (
