@@ -1,6 +1,7 @@
 import pandas as pd
 import logging
 import json
+import concurrent.futures
 from psycopg2.extras import Json, execute_values
 from psycopg2 import sql
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -63,22 +64,28 @@ def load_to_db():
     }
 
     # Map files to columns by filename patterns
-    for key in json_keys:
-        data = _load_json(client, BUCKET_NAME, key)
-        if key.endswith("most_active_stocks.json"):
-            cols["most_active"] = Json(data)
-        elif "/price/0_" in key:
-            cols["price1"] = Json(data)
-        elif "/price/1_" in key:
-            cols["price2"] = Json(data)
-        elif "/price/2_" in key:
-            cols["price3"] = Json(data)
-        elif "/news/0_" in key:
-            cols["new1"] = Json(data)
-        elif "/news/1_" in key:
-            cols["new2"] = Json(data)
-        elif "/news/2_" in key:
-            cols["new3"] = Json(data)
+    # Fetch data in parallel to speed up I/O
+    def load_file(key):
+        return key, _load_json(client, BUCKET_NAME, key)
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_key = {executor.submit(load_file, key): key for key in json_keys}
+        for future in concurrent.futures.as_completed(future_to_key):
+            key, data = future.result()
+            if key.endswith("most_active_stocks.json"):
+                cols["most_active"] = Json(data)
+            elif "/price/0_" in key:
+                cols["price1"] = Json(data)
+            elif "/price/1_" in key:
+                cols["price2"] = Json(data)
+            elif "/price/2_" in key:
+                cols["price3"] = Json(data)
+            elif "/news/0_" in key:
+                cols["new1"] = Json(data)
+            elif "/news/1_" in key:
+                cols["new2"] = Json(data)
+            elif "/news/2_" in key:
+                cols["new3"] = Json(data)
 
     cur.execute(
         f"""
