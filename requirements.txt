@@ -5,6 +5,7 @@ apache-airflow-providers-docker
 apache-airflow-providers-postgres
 apache-airflow-providers-slack
 apache-airflow-providers-common-sql
+apache-airflow-providers-google
 astro-sdk-python
 minio
 pandas
