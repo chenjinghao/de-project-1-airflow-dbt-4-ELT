@@ -101,7 +101,7 @@ Since your code uses the `minio` client, we will use GCS's S3 interoperability f
 2.  Click **Create environment** > **Composer 2**.
 3.  **Name:** `airflow-stocks-env`
 4.  **Location:** `us-central1` (must match Cloud SQL/GCS region for best performance).
-5.  **Image version:** Latest available (e.g., `composer-2.x.x-airflow-2.x.x`).
+5.  **Image version:** `composer-3-airflow-3.1.0-build.7` or later (MUST use Airflow 3+ as the code depends on `airflow.sdk`).
 6.  **Service Account:** Select `airflow-composer-sa`.
 7.  **Environment resources:** Small (for testing).
 8.  **PyPI Packages:**
