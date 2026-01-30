@@ -1,5 +1,5 @@
 from minio import Minio
-from airflow.sdk.bases.hook import BaseHook
+from airflow.hooks.base import BaseHook
 
 def _connect_database():
     minio_conn = BaseHook.get_connection('minio')

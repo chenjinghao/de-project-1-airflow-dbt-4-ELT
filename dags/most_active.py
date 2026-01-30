@@ -1,4 +1,4 @@
-from airflow.sdk import dag, task, task_group
+from airflow.decorators import dag, task, task_group
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.task.trigger_rule import TriggerRule
 from airflow.providers.slack.notifications.slack import SlackNotifier
@@ -163,7 +163,7 @@ def most_active_dag():
         
         transform_data >> query_table
 
-        return query_table
+        # Return nothing so the TaskGroup object is returned by the decorator
     
         
 
