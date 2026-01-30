@@ -12,4 +12,5 @@ airflow.db
 include/data/
 include/helpers/
 logs/
-include/gcp
+include/gcp/
+include/helpers/
