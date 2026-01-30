@@ -1,6 +1,7 @@
 import pandas as pd
 import logging
 import json
+from concurrent.futures import ThreadPoolExecutor
 from psycopg2.extras import Json, execute_values
 from psycopg2 import sql
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -63,8 +64,14 @@ def load_to_db():
     }
 
     # Map files to columns by filename patterns
-    for key in json_keys:
-        data = _load_json(client, BUCKET_NAME, key)
+    def fetch_file(key):
+        return key, _load_json(client, BUCKET_NAME, key)
+
+    # Bolt: Parallelize file fetching to reduce I/O wait time
+    with ThreadPoolExecutor() as executor:
+        results = executor.map(fetch_file, json_keys)
+
+    for key, data in results:
         if key.endswith("most_active_stocks.json"):
             cols["most_active"] = Json(data)
         elif "/price/0_" in key:
@@ -209,10 +216,15 @@ def load_2_db_biz_lookup():
     # Convert to string as required by execute_values when using Composed objects
     insert_query_str = insert_query.as_string(conn)
 
-    def generate_records():
-        for key in json_keys:
-            data = _load_json(client, BUCKET_NAME, key)
+    def fetch_file(key):
+        return key, _load_json(client, BUCKET_NAME, key)
 
+    # Bolt: Pre-fetch all data in parallel to reduce I/O wait time
+    with ThreadPoolExecutor() as executor:
+        fetched_data = list(executor.map(fetch_file, json_keys))
+
+    def generate_records():
+        for key, data in fetched_data:
             records = data if isinstance(data, list) else [data]
             for record in records:
                 if not isinstance(record, dict) or "Symbol" not in record:
