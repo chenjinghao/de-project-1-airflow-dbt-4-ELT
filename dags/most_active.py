@@ -1,28 +1,19 @@
-import os
-from airflow.sdk import dag, task, task_group, chain
-from airflow.sdk.bases.hook import BaseHook
-from airflow.sdk.bases.sensor import PokeReturnValue
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.sdk import dag, task, task_group
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.task.trigger_rule import TriggerRule
-from airflow.exceptions import AirflowException
 from airflow.providers.slack.notifications.slack import SlackNotifier
 from datetime import datetime
-import json
-from io import BytesIO
-import pandas as pd
-import logging
-
-from include.connection.connect_database import _connect_database
+from pathlib import Path
+import os
 
 # tasks
-from include.tasks.checking_b4_extraction import is_holiday, is_today_folder_exists, create_today_folder, check_files_exist_in_folder
+from include.tasks.checking_b4_extraction import is_holiday, create_today_folder, check_files_exist_in_folder
 from include.tasks.extract_stock_info import extract_most_active_stocks, extract_price_top3_most_active_stocks, extract_price_top3_most_active_stocks, extract_news_top3_most_active_stocks, extract_biz_info_top3_most_active_stocks
 from include.tasks.load_2_db import load_to_db, load_2_db_biz_lookup
 
 # dbt
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
-from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig, ExecutionConfig
+from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig
 from cosmos.profiles.postgres import PostgresUserPasswordProfileMapping
 import os
 
@@ -136,12 +127,19 @@ def most_active_dag():
     DB_NAME = "stocks_db"
     SCHEMA_NAME = "public"
     MODEL_TO_QUERY = "mart_price_news__analysis"
+    
     # The path to the dbt project
-    DBT_PROJECT_PATH = "/usr/local/airflow/include/dbt/my_project"
+    current_path = Path(__file__).resolve().parent
+    dbt_project_path = current_path / "include" / "dbt" / "my_project"
+    
+    if not dbt_project_path.exists():
+        dbt_project_path = current_path.parent / "include" / "dbt" / "my_project" # Local
+
+    DBT_PROJECT_PATH = str(dbt_project_path)
 
     profile_config = ProfileConfig(
         profile_name="my_project",
-        target_name="dev",
+        target_name=os.getenv("DBT_TARGET", "dev"),
         profile_mapping=PostgresUserPasswordProfileMapping(
             conn_id=CONNECTION_ID,
             profile_args={"schema": "public"},
