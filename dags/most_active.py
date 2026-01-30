@@ -25,6 +25,7 @@ from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig, ExecutionConfig
 from cosmos.profiles.postgres import PostgresUserPasswordProfileMapping
 import os
+from pathlib import Path
 
 
 
@@ -137,11 +138,18 @@ def most_active_dag():
     SCHEMA_NAME = "public"
     MODEL_TO_QUERY = "mart_price_news__analysis"
     # The path to the dbt project
-    DBT_PROJECT_PATH = "/usr/local/airflow/include/dbt/my_project"
+    # Resolve dbt project path for both Local (sibling) and Composer (child) environments
+    current_path = Path(__file__).resolve().parent
+    dbt_project_path = current_path / "include" / "dbt" / "my_project"  # Composer
+
+    if not dbt_project_path.exists():
+        dbt_project_path = current_path.parent / "include" / "dbt" / "my_project" # Local
+
+    DBT_PROJECT_PATH = str(dbt_project_path)
 
     profile_config = ProfileConfig(
         profile_name="my_project",
-        target_name="dev",
+        target_name=os.getenv("DBT_TARGET", "dev"),
         profile_mapping=PostgresUserPasswordProfileMapping(
             conn_id=CONNECTION_ID,
             profile_args={"schema": "public"},
