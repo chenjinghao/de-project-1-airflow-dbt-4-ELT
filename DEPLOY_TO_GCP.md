@@ -106,7 +106,11 @@ Since your code uses the `minio` client, we will use GCS's S3 interoperability f
 7.  **Environment resources:** Small (for testing).
 8.  **PyPI Packages:**
     *   Expand the **PyPI Packages** section (or add them later via "PyPI Packages" tab).
-    *   Add the contents of your `requirements.txt`. Ensure you include:
+    *   Add the contents of your `requirements.txt`. **It is critical to add all required packages.** Specifically, ensure you include:
+        *   `apache-airflow-providers-slack`
+        *   `apache-airflow-providers-http`
+        *   `apache-airflow-providers-postgres`
+        *   `astro-sdk-python`
         *   `minio`
         *   `astronomer-cosmos`
         *   `dbt-core`
@@ -114,7 +118,7 @@ Since your code uses the `minio` client, we will use GCS's S3 interoperability f
         *   `pandas`
         *   `pandas_market_calendars`
         *   `pendulum`
-        *   `requests`
+        *   `dlt`
 9.  **Environment Variables:**
     *   `DBT_TARGET`: `prod` (or `dev`)
 10. Click **Create**. (This takes 15-25 minutes).
