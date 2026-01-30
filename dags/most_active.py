@@ -163,9 +163,6 @@ def most_active_dag():
         
         transform_data >> query_table
 
-        return query_table
-    
-        
 
     # Task instances
     check_holiday_task = check_holiday()
