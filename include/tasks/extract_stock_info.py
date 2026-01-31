@@ -1,7 +1,7 @@
 import json
 import requests
 import logging
-from airflow.hooks.base import BaseHook
+from airflow.sdk.bases.hook import BaseHook
 from airflow.exceptions import AirflowException
 from include.connection.connect_database import _connect_database
 import time
