@@ -2,6 +2,9 @@ from google.cloud import storage
 from airflow.sdk.bases.hook import BaseHook
 from google.oauth2 import service_account
 import json
+import os
+
+BUCKET_NAME = f"bronze-{os.environ.get('GCP_PROJECT', 'my-de-project-485605')}"
 
 def _connect_database():
     """

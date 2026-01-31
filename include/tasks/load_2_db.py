@@ -4,7 +4,7 @@ import json
 from psycopg2.extras import Json, execute_values
 from psycopg2 import sql
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from include.connection.connect_database import _connect_database
+from include.connection.connect_database import _connect_database, BUCKET_NAME
 
 TABLE_NAME = "raw_most_active_stocks"
 BIZ_LOOKUP_TABLE_NAME = "biz_info_lookup"
@@ -42,7 +42,6 @@ def load_to_db():
     conn = postgres_hook.get_conn()
     cur = conn.cursor()
 
-    BUCKET_NAME = "bronze"
     today_ts = pd.Timestamp.now()
     prefix_name = today_ts.strftime("%Y-%m-%d")
 
@@ -184,7 +183,6 @@ def load_2_db_biz_lookup():
     conn = postgres_hook.get_conn()
     cur = conn.cursor()
 
-    BUCKET_NAME = "bronze"
     today_ts = pd.Timestamp.now()
     prefix_name = today_ts.strftime("%Y-%m-%d")
     prefix = f"{prefix_name}/business_info"
