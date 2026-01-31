@@ -28,13 +28,19 @@ def _ensure_table(cur, table_name):
         )
     )
 
+def _load_blob_as_text(client, bucket_name, blob_name):
+    """
+    Downloads a blob from GCS as text.
+    """
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    return blob.download_as_text()
+
 def _load_json(client, bucket_name, blob_name):
     """
     Downloads a blob from GCS and parses it as JSON.
     """
-    bucket = client.bucket(bucket_name)
-    blob = bucket.blob(blob_name)
-    data = blob.download_as_text()
+    data = _load_blob_as_text(client, bucket_name, blob_name)
     return json.loads(data)
 
 def load_to_db():
@@ -67,21 +73,21 @@ def load_to_db():
 
     # Map files to columns by filename patterns
     for key in json_keys:
-        data = _load_json(client, BUCKET_NAME, key)
+        data = _load_blob_as_text(client, BUCKET_NAME, key)
         if key.endswith("most_active_stocks.json"):
-            cols["most_active"] = Json(data)
+            cols["most_active"] = data
         elif "/price/0_" in key:
-            cols["price1"] = Json(data)
+            cols["price1"] = data
         elif "/price/1_" in key:
-            cols["price2"] = Json(data)
+            cols["price2"] = data
         elif "/price/2_" in key:
-            cols["price3"] = Json(data)
+            cols["price3"] = data
         elif "/news/0_" in key:
-            cols["new1"] = Json(data)
+            cols["new1"] = data
         elif "/news/1_" in key:
-            cols["new2"] = Json(data)
+            cols["new2"] = data
         elif "/news/2_" in key:
-            cols["new3"] = Json(data)
+            cols["new3"] = data
 
     cur.execute(
         f"""
@@ -90,9 +96,9 @@ def load_to_db():
             price1, price2, price3,
             new1, new2, new3
         )
-        VALUES (%(date)s, %(most_active)s,
-                %(price1)s, %(price2)s, %(price3)s,
-                %(new1)s, %(new2)s, %(new3)s)
+        VALUES (%(date)s, %(most_active)s::jsonb,
+                %(price1)s::jsonb, %(price2)s::jsonb, %(price3)s::jsonb,
+                %(new1)s::jsonb, %(new2)s::jsonb, %(new3)s::jsonb)
         ON CONFLICT (date) DO NOTHING;
         """,
         cols,
