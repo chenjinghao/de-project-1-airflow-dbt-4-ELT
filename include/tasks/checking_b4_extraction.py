@@ -4,6 +4,8 @@ from include.connection.connect_database import _connect_database
 import pandas_market_calendars
 import numpy as np
 
+BUCKET_NAME = "bronze-my-de-project-485605"
+
 def is_holiday(
     timezone: str = "America/New_York",
     calendar: str = "NYSE",
@@ -31,7 +33,7 @@ def is_holiday(
     return False
 
 
-def is_today_folder_exists(client, bucket_name="bronze", folder_name=None):
+def is_today_folder_exists(client, bucket_name=BUCKET_NAME, folder_name=None):
     folder = folder_name or f"{pendulum.today('America/New_York').to_date_string()}/"
     try:
         bucket = client.bucket(bucket_name)
@@ -51,7 +53,7 @@ def is_today_folder_exists(client, bucket_name="bronze", folder_name=None):
 
 def create_today_folder():
     client = _connect_database()
-    bucket_name = "bronze"
+    bucket_name = BUCKET_NAME
     folder = f"{pendulum.today('America/New_York').to_date_string()}/"
 
     try:
@@ -83,7 +85,6 @@ def check_files_exist_in_folder():
             - "skip_extraction" if all files exist
     """
     client = _connect_database()
-    BUCKET_NAME = "bronze"
     prefix_name = pendulum.today('America/New_York').to_date_string()
     prefix = f"{prefix_name}/"
 
