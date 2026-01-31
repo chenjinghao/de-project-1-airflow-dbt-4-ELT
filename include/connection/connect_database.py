@@ -1,19 +1,39 @@
-from minio import Minio
+from google.cloud import storage
 from airflow.sdk.bases.hook import BaseHook
+from google.oauth2 import service_account
+import json
 
 def _connect_database():
-    minio_conn = BaseHook.get_connection('minio')
-    endpoint_url = minio_conn.extra_dejson['endpoint_url']
-    endpoint = endpoint_url.split('//')[1]
-    secure = endpoint_url.startswith('https')
+    """
+    Connect to Google Cloud Storage using the 'google_cloud_default' Airflow connection.
+    Returns a google.cloud.storage.Client.
+    """
+    conn = BaseHook.get_connection('google_cloud_default')
     
-    access_key = minio_conn.login
-    secret_key = minio_conn.password
+    # If the connection has a JSON keyfile content in the extra field or keyfile_dict
+    keyfile_dict = None
+    if conn.extra_dejson:
+        if 'keyfile_dict' in conn.extra_dejson:
+            # Sometimes stored as a string, sometimes as a dict
+            kf = conn.extra_dejson['keyfile_dict']
+            if isinstance(kf, str):
+                 keyfile_dict = json.loads(kf)
+            else:
+                 keyfile_dict = kf
+        elif 'extra__google_cloud_platform__keyfile_dict' in conn.extra_dejson:
+             kf = conn.extra_dejson['extra__google_cloud_platform__keyfile_dict']
+             if isinstance(kf, str):
+                 keyfile_dict = json.loads(kf)
+             else:
+                 keyfile_dict = kf
 
-    client = Minio(
-        endpoint=endpoint,
-        access_key=access_key,
-        secret_key=secret_key,
-        secure=secure
-    )
+    # Check if we found credentials in the connection
+    if keyfile_dict:
+        credentials = service_account.Credentials.from_service_account_info(keyfile_dict)
+        client = storage.Client(credentials=credentials)
+    else:
+        # Fallback to ADC or environment variables if no specific keyfile is found
+        # This works if the environment is configured with GOOGLE_APPLICATION_CREDENTIALS
+        client = storage.Client()
+
     return client

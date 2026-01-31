@@ -27,12 +27,14 @@ def _ensure_table(cur, table_name):
         )
     )
 
-def _load_json(client, bucket, key):
-    resp = client.get_object(bucket, key)
-    data = resp.read()
-    resp.close()
-    resp.release_conn()
-    return json.loads(data.decode("utf-8"))
+def _load_json(client, bucket_name, blob_name):
+    """
+    Downloads a blob from GCS and parses it as JSON.
+    """
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    data = blob.download_as_text()
+    return json.loads(data)
 
 def load_to_db():
     client = _connect_database()
@@ -44,8 +46,9 @@ def load_to_db():
     today_ts = pd.Timestamp.now()
     prefix_name = today_ts.strftime("%Y-%m-%d")
 
-    objects = client.list_objects(bucket_name=BUCKET_NAME, prefix=prefix_name, recursive=True)
-    json_keys = [obj.object_name for obj in objects if obj.object_name.endswith(".json")]
+    # GCS list_blobs returns an iterator
+    blobs = client.list_blobs(BUCKET_NAME, prefix=prefix_name)
+    json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
 
     logging.info(f"JSON files in {BUCKET_NAME}/{prefix_name}: {json_keys}")
 
@@ -186,8 +189,8 @@ def load_2_db_biz_lookup():
     prefix_name = today_ts.strftime("%Y-%m-%d")
     prefix = f"{prefix_name}/business_info"
 
-    objects = client.list_objects(bucket_name=BUCKET_NAME, prefix=prefix, recursive=True)
-    json_keys = [obj.object_name for obj in objects if obj.object_name.endswith(".json")]
+    blobs = client.list_blobs(BUCKET_NAME, prefix=prefix)
+    json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
 
     logging.info(f"JSON files in {BUCKET_NAME}/{prefix}: {json_keys}")
 

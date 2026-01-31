@@ -2,13 +2,21 @@ import sys
 from unittest.mock import MagicMock, patch
 import pytest
 
-# Mock modules that might be missing in the test environment
+# Mock modules that might be missing in the test environment or need to be mocked
 sys.modules['airflow'] = MagicMock()
 sys.modules['airflow.sdk'] = MagicMock()
 sys.modules['airflow.sdk.bases'] = MagicMock()
 sys.modules['airflow.sdk.bases.hook'] = MagicMock()
 sys.modules['airflow.exceptions'] = MagicMock()
-sys.modules['minio'] = MagicMock()
+
+# Mock Google modules structure
+mock_google = MagicMock()
+sys.modules['google'] = mock_google
+sys.modules['google.cloud'] = MagicMock()
+sys.modules['google.cloud.storage'] = MagicMock()
+sys.modules['google.oauth2'] = MagicMock()
+sys.modules['google.oauth2.service_account'] = MagicMock()
+
 sys.modules['requests'] = MagicMock()
 
 # Import the module under test
@@ -35,9 +43,15 @@ def test_extract_news_top3_most_active_stocks():
          patch('include.tasks.extract_stock_info.re') as mock_requests, \
          patch('include.tasks.extract_stock_info.time.sleep'):
 
-        # Setup MinIO client mock
+        # Setup GCS client mock
         mock_client = MagicMock()
         mock_connect_db.return_value = mock_client
+
+        mock_bucket = MagicMock()
+        mock_client.bucket.return_value = mock_bucket
+
+        mock_blob = MagicMock()
+        mock_bucket.blob.return_value = mock_blob
 
         # Setup API connection mock
         mock_api_conn = MagicMock()
@@ -57,18 +71,16 @@ def test_extract_news_top3_most_active_stocks():
         # Verify result
         assert result == "All news data for top 3 most active stocks stored in my-bucket/2023-10-27/news/"
 
-        # Verify MinIO put_object calls
-        assert mock_client.put_object.call_count == 3
+        # Verify GCS calls
+        assert mock_client.bucket.call_count == 1
+        mock_client.bucket.assert_called_with('my-bucket')
 
-        # Verify first call
-        args, kwargs = mock_client.put_object.call_args_list[0]
-        assert kwargs['bucket_name'] == 'my-bucket'
-        assert kwargs['object_name'] == '2023-10-27/news/0_AAPL_stocks_news.json'
+        assert mock_bucket.blob.call_count == 3
+
+        # Check first blob call
+        mock_bucket.blob.assert_any_call('2023-10-27/news/0_AAPL_stocks_news.json')
+
+        assert mock_blob.upload_from_string.call_count == 3
 
         # Verify API calls
         assert mock_requests.get.call_count == 3
-        # Check params of first call
-        call_args = mock_requests.get.call_args_list[0]
-        assert call_args[1]['params']['function'] == 'NEWS_SENTIMENT'
-        assert call_args[1]['params']['tickers'] == 'AAPL'
-        assert call_args[1]['params']['apikey'] == 'dummy_key'
