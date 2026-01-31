@@ -1,11 +1,8 @@
 import logging
-from io import BytesIO
 import pendulum
 from include.connection.connect_database import _connect_database
-import logging
 import pandas_market_calendars
 import numpy as np
-import pandas as pd
 
 def is_holiday(
     timezone: str = "America/New_York",
@@ -37,15 +34,19 @@ def is_holiday(
 def is_today_folder_exists(client, bucket_name="bronze", folder_name=None):
     folder = folder_name or f"{pendulum.today('America/New_York').to_date_string()}/"
     try:
-        objects = client.list_objects(bucket_name, prefix=folder, recursive=False)
-        for obj in objects:
-            if obj.object_name == folder:
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(folder)
+        if blob.exists():
+            return True
+        else:
+            # Check if there are any objects with this prefix, acting as a folder
+            blobs = list(client.list_blobs(bucket_name, prefix=folder, max_results=1))
+            if blobs:
                 return True
-            else:
-                logging.info("Folder already exists: %s/%s", bucket_name, folder)
-                return False
+            logging.info("Folder does not exist: %s/%s", bucket_name, folder)
+            return False
     except Exception as exc:
-        logging.exception("Failed to list objects for bucket=%s, prefix=%s", bucket_name, folder)
+        logging.exception("Failed to check folder existence for bucket=%s, prefix=%s", bucket_name, folder)
         raise
 
 def create_today_folder():
@@ -54,16 +55,15 @@ def create_today_folder():
     folder = f"{pendulum.today('America/New_York').to_date_string()}/"
 
     try:
-        if client.bucket_exists(bucket_name):
-
-            client.put_object(bucket_name, folder, BytesIO(b""), 0)
-            logging.info("Created folder %s/%s", bucket_name, folder)
-        else:
-            client.make_bucket(bucket_name)
+        bucket = client.bucket(bucket_name)
+        if not bucket.exists():
+            client.create_bucket(bucket_name)
             logging.info("Created bucket %s", bucket_name)
 
-            client.put_object(bucket_name, folder, BytesIO(b""), 0)
-            logging.info("Created folder %s/%s", bucket_name, folder)
+        # Create a "folder" by uploading an empty object with a trailing slash
+        blob = bucket.blob(folder)
+        blob.upload_from_string("")
+        logging.info("Created folder %s/%s", bucket_name, folder)
 
         return f"{bucket_name}/{folder}"
     except Exception as exc:
@@ -88,8 +88,8 @@ def check_files_exist_in_folder():
     prefix = f"{prefix_name}/"
 
     try:
-        objects = client.list_objects(bucket_name=BUCKET_NAME, prefix=prefix, recursive=True)
-        json_keys = [obj.object_name for obj in objects if obj.object_name.endswith(".json")]
+        blobs = client.list_blobs(BUCKET_NAME, prefix=prefix)
+        json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
         logging.info(f"Found {len(json_keys)} JSON files in {prefix}: {json_keys}")
     except Exception as exc:
         logging.exception("Failed to list objects for bucket=%s, prefix=%s", BUCKET_NAME, prefix)
