@@ -5,10 +5,12 @@ from psycopg2.extras import Json, execute_values
 from psycopg2 import sql
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from include.connection.connect_database import _connect_database
+from include.connection.cloud_sql_connector import get_gcp_cloud_sql_connection
 
 TABLE_NAME = "raw_most_active_stocks"
 BIZ_LOOKUP_TABLE_NAME = "biz_info_lookup"
 BUCKET_NAME = "bronze-my-de-project-485605"
+REGION = "us-west1"
 
 def _ensure_table(cur, table_name):
     cur.execute(
@@ -39,8 +41,12 @@ def _load_json(client, bucket_name, blob_name):
 
 def load_to_db():
     client = _connect_database()
-    postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
-    conn = postgres_hook.get_conn()
+
+    # Extract Project ID from Bucket Name
+    project_id = BUCKET_NAME.replace("bronze-", "")
+
+    # Use helper to get connection (supports local and Cloud SQL)
+    conn = get_gcp_cloud_sql_connection("postgres_stock", project_id, REGION)
     cur = conn.cursor()
 
     today_ts = pd.Timestamp.now()
@@ -180,8 +186,12 @@ def _normalize_value(v):
 
 def load_2_db_biz_lookup():
     client = _connect_database()
-    postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
-    conn = postgres_hook.get_conn()
+
+    # Extract Project ID from Bucket Name
+    project_id = BUCKET_NAME.replace("bronze-", "")
+
+    # Use helper to get connection
+    conn = get_gcp_cloud_sql_connection("postgres_stock", project_id, REGION)
     cur = conn.cursor()
 
     today_ts = pd.Timestamp.now()
