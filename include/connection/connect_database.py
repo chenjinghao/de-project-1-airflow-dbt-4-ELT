@@ -32,8 +32,6 @@ def _connect_database():
         credentials = service_account.Credentials.from_service_account_info(keyfile_dict)
         client = storage.Client(credentials=credentials)
     else:
-        # Fallback to ADC or environment variables if no specific keyfile is found
-        # This works if the environment is configured with GOOGLE_APPLICATION_CREDENTIALS
         client = storage.Client()
 
     return client
