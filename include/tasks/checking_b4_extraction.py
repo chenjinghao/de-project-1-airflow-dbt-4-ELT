@@ -1,10 +1,8 @@
 import logging
 import pendulum
-from include.connection.connect_database import _connect_database
+from include.connection.connect_database import _connect_database, BUCKET_NAME
 import pandas_market_calendars
 import numpy as np
-
-BUCKET_NAME = "bronze-my-de-project-485605"
 
 def is_holiday(
     timezone: str = "America/New_York",

@@ -4,7 +4,7 @@ import json
 from psycopg2.extras import Json, execute_values
 from psycopg2 import sql
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from include.connection.connect_database import _connect_database
+from include.connection.connect_database import _connect_database, BUCKET_NAME
 
 TABLE_NAME = "raw_most_active_stocks"
 BIZ_LOOKUP_TABLE_NAME = "biz_info_lookup"
