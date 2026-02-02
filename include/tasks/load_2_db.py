@@ -38,6 +38,7 @@ def _load_json(client, bucket_name, blob_name):
     return json.loads(data)
 
 def load_to_db():
+    # 1. Initialize Hooks and connections
     client = _connect_database()
     postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
     conn = postgres_hook.get_conn()
