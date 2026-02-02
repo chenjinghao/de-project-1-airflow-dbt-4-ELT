@@ -1,4 +1,3 @@
-import pandas as pd
 import logging
 import json
 from psycopg2.extras import Json, execute_values
@@ -6,6 +5,7 @@ from psycopg2 import sql
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from include.connection.connect_database import _connect_database
 
+# Constants
 TABLE_NAME = "raw_most_active_stocks"
 BIZ_LOOKUP_TABLE_NAME = "biz_info_lookup"
 BUCKET_NAME = "bronze-my-de-project-485605"
@@ -16,92 +16,89 @@ def _ensure_table(cur, table_name):
             CREATE TABLE IF NOT EXISTS {} (
                 date DATE PRIMARY KEY,
                 most_active JSONB,
-                price1 JSONB,
-                price2 JSONB,
-                price3 JSONB,
-                new1 JSONB,
-                new2 JSONB,
-                new3 JSONB
+                price1 JSONB, price2 JSONB, price3 JSONB,
+                new1 JSONB, new2 JSONB, new3 JSONB
             );
-        """).format(
-            sql.Identifier(table_name)
-        )
+        """).format(sql.Identifier(table_name))
     )
 
 def _load_json(client, bucket_name, blob_name):
-    """
-    Downloads a blob from GCS and parses it as JSON.
-    """
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
+    # Validate if file exists to prevent crash
+    if not blob.exists():
+        logging.warning(f"File {blob_name} not found.")
+        return None
     data = blob.download_as_text()
     return json.loads(data)
 
-def load_to_db():
-    # 1. Initialize Hooks and connections
+def load_to_db(**kwargs):
+    """
+    Accepts **kwargs to get the Airflow execution date (ds).
+    """
+    # 1. Use Airflow's date (YYYY-MM-DD)
+    prefix_name = kwargs['ds'] 
+    
     client = _connect_database()
     postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
-    conn = postgres_hook.get_conn()
-    cur = conn.cursor()
+    
+    # 2. Use Context Manager for auto-commit and safe closing
+    with postgres_hook.get_conn() as conn:
+        with conn.cursor() as cur:
+            
+            # List files
+            blobs = client.list_blobs(BUCKET_NAME, prefix=prefix_name)
+            json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
+            logging.info(f"Found {len(json_keys)} files for date {prefix_name}")
 
-    today_ts = pd.Timestamp.now()
-    prefix_name = today_ts.strftime("%Y-%m-%d")
+            _ensure_table(cur, TABLE_NAME)
 
-    # GCS list_blobs returns an iterator
-    blobs = client.list_blobs(BUCKET_NAME, prefix=prefix_name)
-    json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
+            cols = {
+                "date": prefix_name,
+                "most_active": None,
+                "price1": None, "price2": None, "price3": None,
+                "new1": None, "new2": None, "new3": None,
+            }
 
-    logging.info(f"JSON files in {BUCKET_NAME}/{prefix_name}: {json_keys}")
+            # Map files (Logic looks good)
+            for key in json_keys:
+                data = _load_json(client, BUCKET_NAME, key)
+                if not data: continue
+                
+                if "most_active_stocks.json" in key:
+                    cols["most_active"] = Json(data)
+                elif "/price/0_" in key: cols["price1"] = Json(data)
+                elif "/price/1_" in key: cols["price2"] = Json(data)
+                elif "/price/2_" in key: cols["price3"] = Json(data)
+                elif "/news/0_" in key: cols["new1"] = Json(data)
+                elif "/news/1_" in key: cols["new2"] = Json(data)
+                elif "/news/2_" in key: cols["new3"] = Json(data)
 
-    _ensure_table(cur, table_name=TABLE_NAME)
+            # 3. FIXED: SQL Injection safety + UPSERT logic
+            # Use DO UPDATE so re-runs fill in missing data
+            insert_stmt = sql.SQL("""
+                INSERT INTO {} (
+                    date, most_active,
+                    price1, price2, price3,
+                    new1, new2, new3
+                )
+                VALUES (
+                    %(date)s, %(most_active)s,
+                    %(price1)s, %(price2)s, %(price3)s,
+                    %(new1)s, %(new2)s, %(new3)s
+                )
+                ON CONFLICT (date) DO UPDATE SET
+                    most_active = EXCLUDED.most_active,
+                    price1 = EXCLUDED.price1,
+                    price2 = EXCLUDED.price2,
+                    price3 = EXCLUDED.price3,
+                    new1 = EXCLUDED.new1,
+                    new2 = EXCLUDED.new2,
+                    new3 = EXCLUDED.new3;
+            """).format(sql.Identifier(TABLE_NAME))
 
-    cols = {
-        "date": prefix_name,
-        "most_active": None,
-        "price1": None,
-        "price2": None,
-        "price3": None,
-        "new1": None,
-        "new2": None,
-        "new3": None,
-    }
-
-    # Map files to columns by filename patterns
-    for key in json_keys:
-        data = _load_json(client, BUCKET_NAME, key)
-        if key.endswith("most_active_stocks.json"):
-            cols["most_active"] = Json(data)
-        elif "/price/0_" in key:
-            cols["price1"] = Json(data)
-        elif "/price/1_" in key:
-            cols["price2"] = Json(data)
-        elif "/price/2_" in key:
-            cols["price3"] = Json(data)
-        elif "/news/0_" in key:
-            cols["new1"] = Json(data)
-        elif "/news/1_" in key:
-            cols["new2"] = Json(data)
-        elif "/news/2_" in key:
-            cols["new3"] = Json(data)
-
-    cur.execute(
-        f"""
-        INSERT INTO {TABLE_NAME} (
-            date, most_active,
-            price1, price2, price3,
-            new1, new2, new3
-        )
-        VALUES (%(date)s, %(most_active)s,
-                %(price1)s, %(price2)s, %(price3)s,
-                %(new1)s, %(new2)s, %(new3)s)
-        ON CONFLICT (date) DO NOTHING;
-        """,
-        cols,
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
-    logging.info("Data loaded into the database successfully.")
+            cur.execute(insert_stmt, cols)
+            logging.info(f"Upserted data for {prefix_name}")
 
 BIZ_LOOKUP_COLUMNS = [
     "Symbol",
@@ -179,55 +176,52 @@ def _normalize_value(v):
         return json.dumps(v)
     return v
 
-def load_2_db_biz_lookup():
-    client = _connect_database()
-    postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
-    conn = postgres_hook.get_conn()
-    cur = conn.cursor()
-
-    today_ts = pd.Timestamp.now()
-    prefix_name = today_ts.strftime("%Y-%m-%d")
+def load_2_db_biz_lookup(**kwargs):
+    # 1. Use Airflow date
+    prefix_name = kwargs['ds'] 
     prefix = f"{prefix_name}/business_info"
 
-    blobs = client.list_blobs(BUCKET_NAME, prefix=prefix)
-    json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
+    client = _connect_database()
+    postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
+    
+    with postgres_hook.get_conn() as conn:
+        with conn.cursor() as cur:
 
-    logging.info(f"JSON files in {BUCKET_NAME}/{prefix}: {json_keys}")
+            blobs = client.list_blobs(BUCKET_NAME, prefix=prefix)
+            json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
 
-    _ensure_lookup_table(cur, table_name=BIZ_LOOKUP_TABLE_NAME)
+            _ensure_lookup_table(cur, BIZ_LOOKUP_TABLE_NAME)
 
-    cols = BIZ_LOOKUP_COLUMNS
+            # 2. Prepare Query
+            insert_query = sql.SQL("""
+                INSERT INTO {} ({})
+                VALUES %s
+                ON CONFLICT ({}) DO UPDATE SET
+                -- Generate 'col = EXCLUDED.col' for all columns except Symbol
+                {}
+            """).format(
+                sql.Identifier(BIZ_LOOKUP_TABLE_NAME),
+                sql.SQL(", ").join(map(sql.Identifier, BIZ_LOOKUP_COLUMNS)),
+                sql.Identifier("Symbol"),
+                sql.SQL(", ").join([
+                    sql.SQL("{} = EXCLUDED.{}").format(sql.Identifier(c), sql.Identifier(c))
+                    for c in BIZ_LOOKUP_COLUMNS if c != "Symbol"
+                ])
+            )
 
-    # Use batch insert with execute_values
-    insert_query = sql.SQL("""
-        INSERT INTO {} ({})
-        VALUES %s
-        ON CONFLICT ({}) DO NOTHING
-    """).format(
-        sql.Identifier(BIZ_LOOKUP_TABLE_NAME),
-        sql.SQL(", ").join(map(sql.Identifier, cols)),
-        sql.Identifier("Symbol"),
-    )
+            def generate_records():
+                for key in json_keys:
+                    data = _load_json(client, BUCKET_NAME, key)
+                    if not data: continue
 
-    # Convert to string as required by execute_values when using Composed objects
-    insert_query_str = insert_query.as_string(conn)
+                    records = data if isinstance(data, list) else [data]
+                    for record in records:
+                        if not isinstance(record, dict) or "Symbol" not in record:
+                            continue
+                        # _normalize_value function needs to be in scope or imported
+                        yield [_normalize_value(record.get(c)) for c in BIZ_LOOKUP_COLUMNS]
 
-    def generate_records():
-        for key in json_keys:
-            data = _load_json(client, BUCKET_NAME, key)
-
-            records = data if isinstance(data, list) else [data]
-            for record in records:
-                if not isinstance(record, dict) or "Symbol" not in record:
-                    logging.warning(f"Skipping invalid record in {key}: {record}")
-                    continue
-
-                yield [_normalize_value(record.get(c)) for c in cols]
-
-    execute_values(cur, insert_query_str, generate_records())
-    logging.info(f"Inserted records into {BIZ_LOOKUP_TABLE_NAME}.")
-
-    conn.commit()
-    cur.close()
-    conn.close()
-    logging.info("Business lookup data loaded into the database successfully.")
+            # 3. Execute Values
+            # execute_values handles the VALUES %s expansion automatically
+            execute_values(cur, insert_query, generate_records())
+            logging.info(f"Inserted records into {BIZ_LOOKUP_TABLE_NAME}.")
