@@ -36,14 +36,24 @@ def load_to_db(**kwargs):
     """
     Accepts **kwargs to get the Airflow execution date (ds).
     """
+    logging.info("Starting load_to_db task execution")
     # 1. Use Airflow's date (YYYY-MM-DD)
-    prefix_name = kwargs['ds'] 
+    try:
+        prefix_name = kwargs['ds']
+        logging.info(f"Processing date: {prefix_name}")
+    except KeyError:
+        logging.error("KeyError: 'ds' not found in kwargs. Ensure **context is passed from the DAG.")
+        raise
     
     client = _connect_database()
+    logging.info("Connected to GCS")
+
+    logging.info("Connecting to Postgres...")
     postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
     
     # 2. Use Context Manager for auto-commit and safe closing
     with postgres_hook.get_conn() as conn:
+        logging.info("Postgres connection established")
         with conn.cursor() as cur:
             
             # List files
@@ -177,14 +187,25 @@ def _normalize_value(v):
     return v
 
 def load_2_db_biz_lookup(**kwargs):
+    logging.info("Starting load_2_db_biz_lookup task execution")
     # 1. Use Airflow date
-    prefix_name = kwargs['ds'] 
+    try:
+        prefix_name = kwargs['ds']
+        logging.info(f"Processing date: {prefix_name}")
+    except KeyError:
+        logging.error("KeyError: 'ds' missing.")
+        raise
+
     prefix = f"{prefix_name}/business_info"
 
     client = _connect_database()
+    logging.info("Connected to GCS")
+
+    logging.info("Connecting to Postgres...")
     postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
     
     with postgres_hook.get_conn() as conn:
+        logging.info("Postgres connection established")
         with conn.cursor() as cur:
 
             blobs = client.list_blobs(BUCKET_NAME, prefix=prefix)
