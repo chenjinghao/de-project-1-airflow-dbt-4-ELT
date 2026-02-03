@@ -51,6 +51,13 @@ def load_to_db(**kwargs):
     logging.info("Connecting to Postgres...")
     postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
     
+    # Debug: Log connection details to verify host/port
+    try:
+        conn_details = postgres_hook.get_connection("postgres_stock")
+        logging.info(f"Attempting connection to Host: {conn_details.host}, Port: {conn_details.port}, Schema: {conn_details.schema}, User: {conn_details.login}")
+    except Exception as e:
+        logging.warning(f"Could not retrieve connection details: {e}")
+
     # 2. Use Context Manager for auto-commit and safe closing
     with postgres_hook.get_conn() as conn:
         logging.info("Postgres connection established")
@@ -204,6 +211,13 @@ def load_2_db_biz_lookup(**kwargs):
     logging.info("Connecting to Postgres...")
     postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
     
+    # Debug: Log connection details to verify host/port
+    try:
+        conn_details = postgres_hook.get_connection("postgres_stock")
+        logging.info(f"Attempting connection to Host: {conn_details.host}, Port: {conn_details.port}, Schema: {conn_details.schema}, User: {conn_details.login}")
+    except Exception as e:
+        logging.warning(f"Could not retrieve connection details: {e}")
+
     with postgres_hook.get_conn() as conn:
         logging.info("Postgres connection established")
         with conn.cursor() as cur:
