@@ -39,6 +39,11 @@ Deploy Your Project to Astronomer
 
 If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
 
+Secure Deployment (VPN)
+=======================
+
+For instructions on deploying this project in a secure environment using Google Cloud VPC, Cloud NAT, and Private IP (Cloud SQL & Composer), please refer to [VPN_SETUP_GUIDE.md](VPN_SETUP_GUIDE.md).
+
 Contact
 =======
 
