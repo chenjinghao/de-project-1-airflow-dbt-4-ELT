@@ -110,12 +110,12 @@ def most_active_dag():
     @task_group(group_id='Loading_to_DB')
     def loading_group():
         @task(task_id="load_data_to_db")
-        def load_data_2_db():
-            load_to_db()
+        def load_data_2_db(**context):
+            load_to_db(**context)
 
         @task(task_id="load_2_db_biz_lookup")
-        def load_2_db_biz_lookup_task():
-            load_2_db_biz_lookup()
+        def load_2_db_biz_lookup_task(**context):
+            load_2_db_biz_lookup(**context)
 
         load_data_task = load_data_2_db()
         load_data_task_2 = load_2_db_biz_lookup_task()
