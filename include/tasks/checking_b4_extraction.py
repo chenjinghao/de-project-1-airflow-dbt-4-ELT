@@ -34,7 +34,17 @@ def is_holiday(
 
 
 def is_today_folder_exists(client, bucket_name=BUCKET_NAME, folder_name=None):
+    '''Check if today's folder exists in the specified GCS bucket.
+    Args:
+        client (google.cloud.storage.Client): Google Cloud Storage client.
+        bucket_name (str): Name of the GCS bucket.
+        folder_name (str, optional): Specific folder name to check. Defaults to today's date in 'America/New_York' timezone.
+        Returns:
+        bool: True if the folder exists, False otherwise.
+    '''
+
     folder = folder_name or f"{pendulum.today('America/New_York').to_date_string()}/"
+    
     try:
         bucket = client.bucket(bucket_name)
         blob = bucket.blob(folder)
@@ -52,6 +62,11 @@ def is_today_folder_exists(client, bucket_name=BUCKET_NAME, folder_name=None):
         raise
 
 def create_today_folder():
+    """
+    Create today's folder in the specified GCS bucket if it doesn't exist.
+    Returns:
+        str: The path of the created folder in the format 'bucket_name/folder_name/'
+    """
     client = _connect_database()
     bucket_name = BUCKET_NAME
     folder = f"{pendulum.today('America/New_York').to_date_string()}/"

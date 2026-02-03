@@ -7,11 +7,9 @@ from include.connection.connect_database import _connect_database
 import time
 
 def extract_most_active_stocks(folder_path, **context):
-
     """Extract most active stocks from Alpha Vantage API and store in GCS"""
     logging.info("Extracting most active stocks data from API.")
 
-    
     bucket_name = folder_path.split('/')[0]
     folder_name = folder_path.split('/')[1]
     
@@ -51,9 +49,6 @@ def extract_most_active_stocks(folder_path, **context):
 def extract_price_top3_most_active_stocks(file_path, **context):
     """Extract price data for top 3 most active stocks and store in GCS"""
     logging.info("Extracting price data for top 3 most active stocks.")
-
-    """Get the name of top 3 most active stocks name from pervious task"""
-    logging.info("Retrieving top 3 most active stocks from pervious task.")
 
     api = BaseHook.get_connection('stock_api')
     url = f'{api.host}'
@@ -168,8 +163,10 @@ def extract_biz_info_top3_most_active_stocks(**context):
         raise AirflowException("top3_stocks XCom missing from price_top3_most_active_stocks")
 
     folder_path = context['ti'].xcom_pull(key='return_value', task_ids='Extraction_from_API.create_today_folder')
+    
     if not folder_path:
         folder_path = context['ti'].xcom_pull(key='return_value', task_ids='create_today_folder')
+    
     bucket_name = folder_path.split('/')[0]
     folder_name = folder_path.split('/')[1]
     bucket = client.bucket(bucket_name)

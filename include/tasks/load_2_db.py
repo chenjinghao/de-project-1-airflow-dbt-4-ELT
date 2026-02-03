@@ -11,6 +11,7 @@ BIZ_LOOKUP_TABLE_NAME = "biz_info_lookup"
 BUCKET_NAME = "bronze-my-de-project-485605"
 
 def _ensure_table(cur, table_name):
+    """Ensure the main table exists in Postgres."""
     cur.execute(
         sql.SQL("""
             CREATE TABLE IF NOT EXISTS {} (
@@ -23,12 +24,15 @@ def _ensure_table(cur, table_name):
     )
 
 def _load_json(client, bucket_name, blob_name):
+    """Load JSON from GCS."""
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
+    
     # Validate if file exists to prevent crash
     if not blob.exists():
         logging.warning(f"File {blob_name} not found.")
         return None
+    
     data = blob.download_as_text()
     return json.loads(data)
 
@@ -177,6 +181,7 @@ BIZ_LOOKUP_COLUMNS = [
 
 
 def _ensure_lookup_table(cur, table_name):
+    """Ensure the lookup table exists in Postgres."""
     cols_sql = [
         sql.SQL("{} TEXT").format(sql.Identifier(c)) for c in BIZ_LOOKUP_COLUMNS
     ]
@@ -189,12 +194,15 @@ def _ensure_lookup_table(cur, table_name):
     )
 
 def _normalize_value(v):
+    """Normalize value for insertion."""
     if isinstance(v, (dict, list)):
         return json.dumps(v)
     return v
 
 def load_2_db_biz_lookup(**kwargs):
+    """Load business info data into Postgres lookup table."""
     logging.info("Starting load_2_db_biz_lookup task execution")
+    
     # 1. Use Airflow date
     try:
         prefix_name = kwargs['ds']
