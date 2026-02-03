@@ -1,7 +1,7 @@
 from airflow.sdk import dag, task, task_group
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.task.trigger_rule import TriggerRule
-from airflow.providers.slack.notifications.slack import SlackNotifier
+from airflow.providers.slack.notifications.slack import send_slack_notification
 from datetime import datetime
 from pathlib import Path
 import os
@@ -26,16 +26,20 @@ import os
     tags=['stock', 'price','most_active'],
     max_active_runs=1,
     max_active_tasks=1,
-    on_success_callback=SlackNotifier(
-        slack_conn_id= 'slack',
-        text=":tada: DAG {{ dag.dag_id }} Succeeded on {{ ds }}",
-        channel='general'
-    ),
-    on_failure_callback=SlackNotifier(
-        slack_conn_id= 'slack',
-        text=":red_circle: DAG {{ dag.dag_id }} Failed on {{ ds }}",
-        channel='general'
-    )
+    on_success_callback=[
+        send_slack_notification(
+            slack_conn_id='slack',
+            text=":tada: DAG {{ dag.dag_id }} Succeeded on {{ ds }}",
+            channel='general'
+        )
+    ],
+    on_failure_callback=[
+        send_slack_notification(
+            slack_conn_id='slack',
+            text=":red_circle: DAG {{ dag.dag_id }} Failed on {{ ds }}",
+            channel='general'
+        )
+    ],
 )
 def most_active_dag():
 
