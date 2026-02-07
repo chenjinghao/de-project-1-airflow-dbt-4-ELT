@@ -1,0 +1,95 @@
+version: '3.8'
+
+x-airflow-common: &airflow-common
+  build: .
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://postgres:postgres@postgres:5432/airflow
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql://postgres:postgres@postgres:5432/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+    AIRFLOW_CONN_POSTGRES_STOCK: postgresql://postgres:postgres@postgres:5432/stocks_db
+    # Low memory tuning
+    AIRFLOW__CORE__PARALLELISM: 2
+    AIRFLOW__CORE__DAG_CONCURRENCY: 2
+    AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: 1
+    AIRFLOW__WEBSERVER__WORKERS: 1
+    AIRFLOW__WEBSERVER__WORKER_REFRESH_INTERVAL: 1800
+
+  volumes:
+    - ./dags:/usr/local/airflow/dags
+    - ./include:/usr/local/airflow/include
+    - ./plugins:/usr/local/airflow/plugins
+    - ./logs:/usr/local/airflow/logs
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-postgres.sh:/docker-entrypoint-initdb.d/init-postgres.sh
+    ports:
+      - "5432:5432"
+    # Tuned for extremely low memory (Free Tier e2-micro)
+    command: postgres -c shared_buffers=128MB -c max_connections=50
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      "airflow db migrate &&
+       airflow users create --role Admin --username admin --email admin@example.com --firstname Admin --lastname User --password admin || true"
+    restart: "no"
+
+volumes:
+  postgres_data:
