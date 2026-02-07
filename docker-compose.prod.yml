@@ -9,6 +9,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql://postgres:postgres@postgres:5432/airflow
     AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
     AIRFLOW_CONN_POSTGRES_STOCK: postgresql://postgres:postgres@postgres:5432/stocks_db
+    # MinIO (S3) Connection
+    AIRFLOW_CONN_AWS_DEFAULT: aws://minio:minio123@?host=http%3A%2F%2Fminio%3A9000
     # Low memory tuning
     AIRFLOW__CORE__PARALLELISM: 2
     AIRFLOW__CORE__DAG_CONCURRENCY: 2
@@ -24,6 +26,8 @@ x-airflow-common: &airflow-common
   depends_on:
     postgres:
       condition: service_healthy
+    minio:
+      condition: service_started
 
 services:
   postgres:
@@ -43,6 +47,23 @@ services:
       test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 10s
       retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     restart: unless-stopped
     deploy:
       resources:
@@ -93,3 +114,4 @@ services:
 
 volumes:
   postgres_data:
+  minio_data:

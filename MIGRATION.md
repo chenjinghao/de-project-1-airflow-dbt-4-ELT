@@ -7,7 +7,7 @@ This guide details how to migrate your Airflow environment from Google Cloud Com
 **Trade-offs:**
 - The server has limited memory (1GB RAM).
 - We removed Metabase to save resources.
-- It may be slower than Composer, but sufficient for daily personal DAGs.
+- We added MinIO (local S3-compatible storage) to replace Google Cloud Storage for data processing.
 
 ## Prerequisites
 
@@ -38,8 +38,9 @@ We will create an `e2-micro` VM in `us-west1` (Oregon) with a 30GB standard disk
    # Compresses and copies the current directory to the VM
    gcloud compute scp --recurse . airflow-vm-free-tier:~/airflow_project --zone=us-west1-b
    ```
+   *(Alternatively, clone from your GitHub repository directly on the VM).*
 
-## Step 3: Install & Start Airflow
+## Step 3: Install & Start Airflow + MinIO
 
 1. SSH into the VM again:
    ```bash
@@ -51,20 +52,33 @@ We will create an `e2-micro` VM in `us-west1` (Oregon) with a 30GB standard disk
    cd airflow_project
    ```
 
-3. Run the installation script. This will:
+3. **Update Dockerfile (If needed):**
+   If you are using Airflow 3 features, edit the `Dockerfile` to use the correct image (e.g., `astrocrpublic.azurecr.io/runtime:3.1-12`).
+   ```bash
+   nano Dockerfile
+   ```
+
+4. **Run the installation script.** This will:
    - **Create a 2GB Swap File** (Critical for preventing crashes on 1GB RAM).
    - Install Docker.
-   - Start Airflow.
+   - Start Airflow and MinIO.
    ```bash
+   chmod +x scripts/gcp_migration/install_on_vm.sh
    sudo ./scripts/gcp_migration/install_on_vm.sh
    ```
 
-4. Wait 5-10 minutes. The first start takes time on a micro instance.
+5. Wait 5-10 minutes. The first start takes time on a micro instance.
 
 ## Step 4: Access & Verify
 
-1. Open your browser: `http://<VM_PUBLIC_IP>:8080` (User: `admin`, Password: `admin`)
-2. Verify your DAGs.
+1. **Airflow UI**: `http://<VM_PUBLIC_IP>:8080` (User: `admin`, Password: `admin`)
+2. **MinIO Console**: `http://<VM_PUBLIC_IP>:9001` (User: `minio`, Password: `minio123`)
+
+**Note:** You might need to open port 9001 in the firewall if you want to access the MinIO UI from your browser (currently only 8080 is opened by the script).
+To open MinIO port:
+```bash
+gcloud compute firewall-rules create allow-minio --allow tcp:9001 --target-tags=airflow-server
+```
 
 ## Step 5: DECOMISSION OLD RESOURCES (Crucial!)
 

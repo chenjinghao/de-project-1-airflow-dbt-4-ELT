@@ -41,11 +41,12 @@ mkdir -p logs plugins include dags
 # The container runs as 'astro' (uid 50000).
 sudo chown -R 50000:0 logs plugins include dags
 
-echo "Starting Airflow (Free Tier Optimized)..."
+echo "Starting Airflow & MinIO (Free Tier Optimized)..."
 # Ensure we are in the directory with docker-compose.prod.yml
 if [ -f "docker-compose.prod.yml" ]; then
     sudo docker compose -f docker-compose.prod.yml up -d --build
     echo "Airflow started! Access it at http://<VM_IP>:8080"
+    echo "MinIO Console started! Access it at http://<VM_IP>:9001 (User: minio, Pass: minio123)"
 else
     echo "Error: docker-compose.prod.yml not found. Please run this script from the project root."
 fi
