@@ -28,6 +28,8 @@ x-airflow-common: &airflow-common
       condition: service_healthy
     minio:
       condition: service_started
+  networks:
+    - airflow
 
 services:
   postgres:
@@ -52,6 +54,8 @@ services:
       resources:
         limits:
           memory: 256M
+    networks:
+      - airflow
 
   minio:
     image: minio/minio
@@ -69,6 +73,8 @@ services:
       resources:
         limits:
           memory: 256M
+    networks:
+      - airflow
 
   airflow-webserver:
     <<: *airflow-common
@@ -85,6 +91,8 @@ services:
       resources:
         limits:
           memory: 384M
+    networks:
+      - airflow
 
   airflow-scheduler:
     <<: *airflow-common
@@ -94,6 +102,8 @@ services:
       resources:
         limits:
           memory: 384M
+    networks:
+      - airflow
 
   airflow-triggerer:
     <<: *airflow-common
@@ -103,6 +113,8 @@ services:
       resources:
         limits:
           memory: 256M
+    networks:
+      - airflow
 
   airflow-init:
     <<: *airflow-common
@@ -111,7 +123,13 @@ services:
       "airflow db migrate &&
        airflow users create --role Admin --username admin --email admin@example.com --firstname Admin --lastname User --password admin || true"
     restart: "no"
+    networks:
+      - airflow
 
 volumes:
   postgres_data:
   minio_data:
+
+networks:
+  airflow:
+    driver: bridge
