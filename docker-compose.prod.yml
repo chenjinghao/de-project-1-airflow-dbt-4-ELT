@@ -9,6 +9,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql://postgres:postgres@postgres:5432/airflow
     AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
     AIRFLOW_CONN_POSTGRES_STOCK: postgresql://postgres:postgres@postgres:5432/stocks_db
+    # MinIO (S3) Connection
+    AIRFLOW_CONN_AWS_DEFAULT: aws://minio:minio123@?host=http%3A%2F%2Fminio%3A9000
     # Low memory tuning
     AIRFLOW__CORE__PARALLELISM: 2
     AIRFLOW__CORE__DAG_CONCURRENCY: 2
@@ -24,10 +26,14 @@ x-airflow-common: &airflow-common
   depends_on:
     postgres:
       condition: service_healthy
+    minio:
+      condition: service_started
+  networks:
+    - airflow
 
 services:
   postgres:
-    image: postgres:15
+    image: postgres:18.1
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -48,6 +54,27 @@ services:
       resources:
         limits:
           memory: 256M
+    networks:
+      - airflow
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - airflow
 
   airflow-webserver:
     <<: *airflow-common
@@ -64,6 +91,8 @@ services:
       resources:
         limits:
           memory: 384M
+    networks:
+      - airflow
 
   airflow-scheduler:
     <<: *airflow-common
@@ -73,6 +102,8 @@ services:
       resources:
         limits:
           memory: 384M
+    networks:
+      - airflow
 
   airflow-triggerer:
     <<: *airflow-common
@@ -82,6 +113,8 @@ services:
       resources:
         limits:
           memory: 256M
+    networks:
+      - airflow
   
   airflow-init:
     <<: *airflow-common
@@ -90,6 +123,13 @@ services:
       "airflow db migrate && 
        airflow users create --role Admin --username admin --email admin@example.com --firstname Admin --lastname User --password admin || true"
     restart: "no"
+    networks:
+      - airflow
 
 volumes:
   postgres_data:
+  minio_data:
+
+networks:
+  airflow:
+    driver: bridge

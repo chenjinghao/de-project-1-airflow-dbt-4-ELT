@@ -19,15 +19,18 @@ gcloud compute instances create $INSTANCE_NAME \
     --boot-disk-type=pd-standard \
     --tags=airflow-server,http-server
 
-echo "Creating firewall rule to allow port 8080 (Airflow)..."
+echo "Creating firewall rule to allow port 8080 (Airflow) and 5432 (Postgres)..."
 # Check if rule exists first to avoid error
 if ! gcloud compute firewall-rules describe allow-airflow-http &>/dev/null; then
     gcloud compute firewall-rules create allow-airflow-http \
-        --allow tcp:8080 \
+        --allow tcp:8080,tcp:5432 \
         --target-tags=airflow-server \
-        --description="Allow Airflow access"
+        --description="Allow Airflow and Postgres access"
 else
-    echo "Firewall rule allow-airflow-http already exists."
+    # Update existing rule to include 5432
+    echo "Updating existing firewall rule allow-airflow-http..."
+    gcloud compute firewall-rules update allow-airflow-http \
+        --allow tcp:8080,tcp:5432
 fi
 
 echo "VM Creation Complete!"
@@ -39,3 +42,4 @@ echo "Next Steps:"
 echo "1. Upload your project files to the VM."
 echo "2. SSH into the VM: gcloud compute ssh $INSTANCE_NAME --zone=$ZONE"
 echo "3. Run the installation script: bash scripts/gcp_migration/install_on_vm.sh"
+echo "4. IMPORTANT: Change your Postgres password in docker-compose.prod.yml before going live!"
