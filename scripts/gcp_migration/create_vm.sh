@@ -2,29 +2,32 @@
 set -e
 
 # Configuration
-INSTANCE_NAME="airflow-vm"
-ZONE="us-west1-b" # Default to Oregon as per user's previous setup
-MACHINE_TYPE="e2-standard-2"
+INSTANCE_NAME="airflow-vm-free-tier"
+ZONE="us-west1-b" # Oregon (Free Tier eligible)
+MACHINE_TYPE="e2-micro" # Free Tier eligible (2 vCPU, 1 GB RAM)
 IMAGE_PROJECT="ubuntu-os-cloud"
 IMAGE_FAMILY="ubuntu-2204-lts"
+DISK_SIZE="30GB" # Free Tier eligible (up to 30GB)
 
-echo "Creating VM instance $INSTANCE_NAME in $ZONE..."
+echo "Creating Free Tier VM instance $INSTANCE_NAME in $ZONE..."
 gcloud compute instances create $INSTANCE_NAME \
     --zone=$ZONE \
     --machine-type=$MACHINE_TYPE \
     --image-project=$IMAGE_PROJECT \
     --image-family=$IMAGE_FAMILY \
+    --boot-disk-size=$DISK_SIZE \
+    --boot-disk-type=pd-standard \
     --tags=airflow-server,http-server
 
-echo "Creating firewall rule to allow port 8080 (Airflow) and 3000 (Metabase)..."
+echo "Creating firewall rule to allow port 8080 (Airflow)..."
 # Check if rule exists first to avoid error
-if ! gcloud compute firewall-rules describe allow-airflow-metabase &>/dev/null; then
-    gcloud compute firewall-rules create allow-airflow-metabase \
-        --allow tcp:8080,tcp:3000 \
+if ! gcloud compute firewall-rules describe allow-airflow-http &>/dev/null; then
+    gcloud compute firewall-rules create allow-airflow-http \
+        --allow tcp:8080 \
         --target-tags=airflow-server \
-        --description="Allow Airflow and Metabase access"
+        --description="Allow Airflow access"
 else
-    echo "Firewall rule allow-airflow-metabase already exists."
+    echo "Firewall rule allow-airflow-http already exists."
 fi
 
 echo "VM Creation Complete!"

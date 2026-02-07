@@ -9,8 +9,13 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql://postgres:postgres@postgres:5432/airflow
     AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
     AIRFLOW_CONN_POSTGRES_STOCK: postgresql://postgres:postgres@postgres:5432/stocks_db
-    # Add your Slack connection here or in the UI
-    # AIRFLOW_CONN_SLACK: ...
+    # Low memory tuning
+    AIRFLOW__CORE__PARALLELISM: 2
+    AIRFLOW__CORE__DAG_CONCURRENCY: 2
+    AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: 1
+    AIRFLOW__WEBSERVER__WORKERS: 1
+    AIRFLOW__WEBSERVER__WORKER_REFRESH_INTERVAL: 1800
+
   volumes:
     - ./dags:/usr/local/airflow/dags
     - ./include:/usr/local/airflow/include
@@ -32,11 +37,17 @@ services:
       - ./scripts/init-postgres.sh:/docker-entrypoint-initdb.d/init-postgres.sh
     ports:
       - "5432:5432"
+    # Tuned for extremely low memory (Free Tier e2-micro)
+    command: postgres -c shared_buffers=128MB -c max_connections=50
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 5s
+      interval: 10s
       retries: 5
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   airflow-webserver:
     <<: *airflow-common
@@ -48,17 +59,29 @@ services:
       interval: 30s
       timeout: 30s
       retries: 5
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 384M
 
   airflow-scheduler:
     <<: *airflow-common
     command: scheduler
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 384M
 
   airflow-triggerer:
     <<: *airflow-common
     command: triggerer
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   airflow-init:
     <<: *airflow-common
@@ -67,22 +90,6 @@ services:
       "airflow db migrate &&
        airflow users create --role Admin --username admin --email admin@example.com --firstname Admin --lastname User --password admin || true"
     restart: "no"
-
-  metabase:
-    image: metabase/metabase:v0.50.4
-    ports:
-      - "3000:3000"
-    environment:
-      MB_DB_TYPE: postgres
-      MB_DB_DBNAME: metabase_db
-      MB_DB_PORT: 5432
-      MB_DB_USER: postgres
-      MB_DB_PASS: postgres
-      MB_DB_HOST: postgres
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: always
 
 volumes:
   postgres_data:
