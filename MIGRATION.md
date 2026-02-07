@@ -8,6 +8,7 @@ This guide details how to migrate your Airflow environment from Google Cloud Com
 - The server has limited memory (1GB RAM).
 - We removed Metabase to save resources.
 - We added MinIO (local S3-compatible storage) to replace Google Cloud Storage for data processing.
+- You must manage your own security (Firewall rules, Database passwords).
 
 ## Prerequisites
 
@@ -23,6 +24,7 @@ We will create an `e2-micro` VM in `us-west1` (Oregon) with a 30GB standard disk
    ```bash
    ./scripts/gcp_migration/create_vm.sh
    ```
+   **Note:** This script now opens port `5432` (Postgres) so your Streamlit app on Heroku can connect. **Please change your database password in `docker-compose.prod.yml` before deploying!**
 3. Note the **Public IP** output at the end of the script.
 
 ## Step 2: Deploy Code to the VM
@@ -58,7 +60,13 @@ We will create an `e2-micro` VM in `us-west1` (Oregon) with a 30GB standard disk
    nano Dockerfile
    ```
 
-4. **Run the installation script.** This will:
+4. **Update Passwords (Recommended):**
+   Edit `docker-compose.prod.yml` and change `POSTGRES_PASSWORD` and `MINIO_ROOT_PASSWORD`.
+   ```bash
+   nano docker-compose.prod.yml
+   ```
+
+5. **Run the installation script.** This will:
    - **Create a 2GB Swap File** (Critical for preventing crashes on 1GB RAM).
    - Install Docker.
    - Start Airflow and MinIO.
@@ -67,20 +75,24 @@ We will create an `e2-micro` VM in `us-west1` (Oregon) with a 30GB standard disk
    sudo ./scripts/gcp_migration/install_on_vm.sh
    ```
 
-5. Wait 5-10 minutes. The first start takes time on a micro instance.
+6. Wait 5-10 minutes. The first start takes time on a micro instance.
 
 ## Step 4: Access & Verify
 
-1. **Airflow UI**: `http://<VM_PUBLIC_IP>:8080` (User: `admin`, Password: `admin`)
-2. **MinIO Console**: `http://<VM_PUBLIC_IP>:9001` (User: `minio`, Password: `minio123`)
+1. **Airflow UI**: `http://<VM_PUBLIC_IP>:8080` (User: `admin`, Password: `admin` or what you set)
+2. **MinIO Console**: `http://<VM_PUBLIC_IP>:9001` (User: `minio`, Password: `minio123` or what you set)
 
-**Note:** You might need to open port 9001 in the firewall if you want to access the MinIO UI from your browser (currently only 8080 is opened by the script).
-To open MinIO port:
-```bash
-gcloud compute firewall-rules create allow-minio --allow tcp:9001 --target-tags=airflow-server
-```
+## Step 5: Connect Streamlit (Heroku)
 
-## Step 5: DECOMISSION OLD RESOURCES (Crucial!)
+Your Postgres database is now accessible on port `5432`.
+Update your Streamlit secrets/env variables on Heroku:
+- **Host**: `<VM_PUBLIC_IP>`
+- **Port**: `5432`
+- **Database**: `stocks_db`
+- **User**: `postgres`
+- **Password**: `<YOUR_PASSWORD>`
+
+## Step 6: DECOMISSION OLD RESOURCES (Crucial!)
 
 **DELETE** the old resources to stop the billing immediately.
 
