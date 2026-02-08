@@ -90,7 +90,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 450M
     networks:
       - airflow
 
