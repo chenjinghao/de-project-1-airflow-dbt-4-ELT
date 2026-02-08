@@ -24,7 +24,7 @@ We will create an `e2-micro` VM in `us-west1` (Oregon) with a 30GB standard disk
    ```bash
    ./scripts/gcp_migration/create_vm.sh
    ```
-   **Note:** This script now opens port `5432` (Postgres) so your Streamlit app on Heroku can connect. **Please change your database password in `docker-compose.prod.yml` before deploying!**
+   **Note:** This script now opens port `5432` (Postgres) so your Streamlit app on Heroku can connect.
 3. Note the **Public IP** output at the end of the script.
 
 ## Step 2: Deploy Code to the VM
@@ -54,19 +54,21 @@ We will create an `e2-micro` VM in `us-west1` (Oregon) with a 30GB standard disk
    cd airflow_project
    ```
 
-3. **Update Dockerfile (If needed):**
-   If you are using Airflow 3 features, edit the `Dockerfile` to use the correct image (e.g., `astrocrpublic.azurecr.io/runtime:3.1-12`).
+3. **Create .env file:**
+   Create a `.env` file with your credentials:
    ```bash
-   nano Dockerfile
+   nano .env
+   ```
+   Content:
+   ```
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=your_strong_password
+   POSTGRES_DB=airflow
+   MINIO_ROOT_USER=minio
+   MINIO_ROOT_PASSWORD=your_strong_minio_password
    ```
 
-4. **Update Passwords (Recommended):**
-   Edit `docker-compose.prod.yml` and change `POSTGRES_PASSWORD` and `MINIO_ROOT_PASSWORD`.
-   ```bash
-   nano docker-compose.prod.yml
-   ```
-
-5. **Run the installation script.** This will:
+4. **Run the installation script.** This will:
    - **Create a 2GB Swap File** (Critical for preventing crashes on 1GB RAM).
    - Install Docker.
    - Start Airflow and MinIO.
@@ -75,12 +77,12 @@ We will create an `e2-micro` VM in `us-west1` (Oregon) with a 30GB standard disk
    sudo ./scripts/gcp_migration/install_on_vm.sh
    ```
 
-6. Wait 5-10 minutes. The first start takes time on a micro instance.
+5. Wait 5-10 minutes. The first start takes time on a micro instance.
 
 ## Step 4: Access & Verify
 
-1. **Airflow UI**: `http://<VM_PUBLIC_IP>:8080` (User: `admin`, Password: `admin` or what you set)
-2. **MinIO Console**: `http://<VM_PUBLIC_IP>:9001` (User: `minio`, Password: `minio123` or what you set)
+1. **Airflow UI**: `http://<VM_PUBLIC_IP>:8080` (User: `admin`, Password: `admin`)
+2. **MinIO Console**: `http://<VM_PUBLIC_IP>:9001` (User: `minio`, Password: `minio123` or what you set in .env)
 
 ## Step 5: Connect Streamlit (Heroku)
 
@@ -88,7 +90,7 @@ Your Postgres database is now accessible on port `5432`.
 Update your Streamlit secrets/env variables on Heroku:
 - **Host**: `<VM_PUBLIC_IP>`
 - **Port**: `5432`
-- **Database**: `stocks_db`
+- **Database**: `stocks_db` (Note: Airflow uses `airflow` DB, your data is likely in `stocks_db`)
 - **User**: `postgres`
 - **Password**: `<YOUR_PASSWORD>`
 
@@ -110,13 +112,19 @@ We have set up a GitHub Actions workflow to automatically deploy changes to your
 3.  **GitHub Secrets**: Go to your GitHub Repository -> Settings -> Secrets and variables -> Actions.
     -   Add `GCP_PROJECT_ID`: Your Google Cloud Project ID.
     -   Add `GCP_SA_KEY`: The entire content of your JSON key file.
+    -   Add `POSTGRES_USER`: Database username (e.g., `postgres`).
+    -   Add `POSTGRES_PASSWORD`: Strong database password.
+    -   Add `POSTGRES_DB`: Default database (e.g., `airflow`).
+    -   Add `MINIO_ROOT_USER`: MinIO username.
+    -   Add `MINIO_ROOT_PASSWORD`: MinIO password.
 
 **How it works:**
 Every time you push to `main`, GitHub Actions will:
 1.  Authenticate with Google Cloud.
 2.  SSH into your VM (`airflow-vm-free-tier`).
 3.  Pull the latest code (`git pull`).
-4.  Rebuild and restart your containers (`docker compose up -d --build`).
+4.  **Inject Secrets**: It creates a `.env` file on the VM with the secrets from GitHub.
+5.  Rebuild and restart your containers (`docker compose up -d --build`).
 
 ## Tips for Low Memory Environment
 - If the server becomes unresponsive, restart it from the Google Cloud Console.
