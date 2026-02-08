@@ -100,6 +100,24 @@ Update your Streamlit secrets/env variables on Heroku:
 2. **Delete Cloud SQL Instance** (Console > SQL).
 3. **Delete Old Storage Buckets** (Console > Cloud Storage).
 
+## Continuous Deployment (GitHub Actions)
+
+We have set up a GitHub Actions workflow to automatically deploy changes to your VM whenever you push to the `main` branch.
+
+**Prerequisites:**
+1.  **GCP Service Account**: Create a Service Account with "Compute Instance Admin" role.
+2.  **Generate Key**: Create a JSON key for this Service Account.
+3.  **GitHub Secrets**: Go to your GitHub Repository -> Settings -> Secrets and variables -> Actions.
+    -   Add `GCP_PROJECT_ID`: Your Google Cloud Project ID.
+    -   Add `GCP_SA_KEY`: The entire content of your JSON key file.
+
+**How it works:**
+Every time you push to `main`, GitHub Actions will:
+1.  Authenticate with Google Cloud.
+2.  SSH into your VM (`airflow-vm-free-tier`).
+3.  Pull the latest code (`git pull`).
+4.  Rebuild and restart your containers (`docker compose up -d --build`).
+
 ## Tips for Low Memory Environment
 - If the server becomes unresponsive, restart it from the Google Cloud Console.
 - To view logs: `sudo docker compose -f docker-compose.prod.yml logs -f --tail 50`
