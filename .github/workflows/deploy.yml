@@ -8,10 +8,9 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-  ZONE: us-west1-b
-  INSTANCE_NAME: airflow-vm-free-tier
-  SSH_USERNAME: JingH
-
+  ZONE: ${{ secrets.ZONE }}
+  INSTANCE_NAME: ${{ secrets.INSTANCE_NAME }}
+  SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -33,10 +32,19 @@ jobs:
 
     - name: Deploy to VM
       run: |
+        # Create .env file content securely
+        # Note: We use EOF to write multiline content to a file on the remote server
+        ENV_FILE_CONTENT="POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+        POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+        POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+        MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
+        MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}"
+
         # Use SSH_USERNAME to connect as the correct user
         gcloud compute ssh ${SSH_USERNAME}@${INSTANCE_NAME} --zone=$ZONE --command="
           cd ~/airflow_project && \
           git pull origin main && \
+          echo \"$ENV_FILE_CONTENT\" > .env && \
           sudo docker compose -f docker-compose.prod.yml up -d --build && \
           sudo docker image prune -f
         "
