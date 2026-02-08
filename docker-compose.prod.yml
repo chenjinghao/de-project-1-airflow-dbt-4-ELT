@@ -11,9 +11,9 @@ x-airflow-common: &airflow-common
     AIRFLOW_CONN_POSTGRES_STOCK: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/stocks_db
     # MinIO (S3) Connection
     AIRFLOW_CONN_AWS_DEFAULT: aws://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@?host=http%3A%2F%2Fminio%3A9000
-    # Low memory tuning
-    AIRFLOW__CORE__PARALLELISM: 2
-    AIRFLOW__CORE__DAG_CONCURRENCY: 2
+    # Extreme low memory tuning for Free Tier e2-micro
+    AIRFLOW__CORE__PARALLELISM: 1
+    AIRFLOW__CORE__DAG_CONCURRENCY: 1
     AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: 1
     AIRFLOW__WEBSERVER__WORKERS: 1
     AIRFLOW__WEBSERVER__WORKER_REFRESH_INTERVAL: 1800
@@ -43,8 +43,8 @@ services:
       - ./scripts/init-postgres.sh:/docker-entrypoint-initdb.d/init-postgres.sh
     ports:
       - "5432:5432"
-    # Tuned for extremely low memory (Free Tier e2-micro)
-    command: postgres -c shared_buffers=128MB -c max_connections=50
+    # Tuned for extremely low memory
+    command: postgres -c shared_buffers=64MB -c max_connections=25
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
       interval: 10s
@@ -53,7 +53,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 128M
     networks:
       - airflow
 
@@ -72,13 +72,13 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 128M
     networks:
       - airflow
 
   airflow-webserver:
     <<: *airflow-common
-    command: webserver
+    command: airflow webserver
     ports:
       - "8080:8080"
     healthcheck:
@@ -96,23 +96,23 @@ services:
 
   airflow-scheduler:
     <<: *airflow-common
-    command: scheduler
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 384M
-    networks:
-      - airflow
-
-  airflow-triggerer:
-    <<: *airflow-common
-    command: triggerer
+    command: airflow scheduler
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 256M
+    networks:
+      - airflow
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: airflow triggerer
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     networks:
       - airflow
 
