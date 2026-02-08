@@ -78,7 +78,7 @@ services:
 
   airflow-webserver:
     <<: *airflow-common
-    command: webserver
+    command: airflow webserver
     ports:
       - "8080:8080"
     healthcheck:
@@ -96,7 +96,7 @@ services:
 
   airflow-scheduler:
     <<: *airflow-common
-    command: scheduler
+    command: airflow scheduler
     restart: unless-stopped
     deploy:
       resources:
@@ -107,7 +107,7 @@ services:
 
   airflow-triggerer:
     <<: *airflow-common
-    command: triggerer
+    command: airflow triggerer
     restart: unless-stopped
     deploy:
       resources:
