@@ -3,7 +3,9 @@ import json
 from psycopg2.extras import Json, execute_values
 from psycopg2 import sql
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.providers.google.cloud.hooks.gcs import GCSHook
+# from airflow.providers.google.cloud.hooks.gcs import GCSHook # Uncomment if using GCS instead of MinIO
+from include.connection.connect_database import _connect_database
+
 
 # Constants
 TABLE_NAME = "raw_most_active_stocks"
@@ -49,8 +51,11 @@ def load_to_db(**kwargs):
         logging.error("KeyError: 'ds' not found in kwargs. Ensure **context is passed from the DAG.")
         raise
     
-    client = GCSHook(gcp_conn_id='google_cloud_default').get_conn()
-    logging.info("Connected to GCS")
+    # 2. Connect to GCS (or MinIO) using Airflow's connection
+    # client = GCSHook(gcp_conn_id='google_cloud_default').get_conn()
+    # logging.info("Connected to GCS")
+    client = _connect_database()
+    logging.info("Connected to MinIO")
 
     logging.info("Connecting to Postgres...")
     postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
@@ -213,8 +218,10 @@ def load_2_db_biz_lookup(**kwargs):
 
     prefix = f"{prefix_name}/business_info"
 
-    client = GCSHook(gcp_conn_id='google_cloud_default').get_conn()
-    logging.info("Connected to GCS")
+    # client = GCSHook(gcp_conn_id='google_cloud_default').get_conn()
+    # logging.info("Connected to GCS")
+    client = _connect_database()
+    logging.info("Connected to MinIO")
 
     logging.info("Connecting to Postgres...")
     postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")

@@ -4,7 +4,8 @@ from include.connection.connect_database import _connect_database
 import pandas_market_calendars
 import numpy as np
 
-BUCKET_NAME = "bronze-my-de-project-485605"
+# BUCKET_NAME = "bronze-my-de-project-485605"
+BUCKET_NAME = "bronze"
 
 def is_holiday(
     timezone: str = "America/New_York",
