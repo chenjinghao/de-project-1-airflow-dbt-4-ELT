@@ -10,6 +10,7 @@ env:
   GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
   ZONE: us-west1-b
   INSTANCE_NAME: airflow-vm-free-tier
+  SSH_USERNAME: JingH # Change this if your VM username is different
 
 jobs:
   deploy:
@@ -32,7 +33,8 @@ jobs:
 
     - name: Deploy to VM
       run: |
-        gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --command="
+        # Use SSH_USERNAME to connect as the correct user
+        gcloud compute ssh ${SSH_USERNAME}@${INSTANCE_NAME} --zone=$ZONE --command="
           cd ~/airflow_project && \
           git pull origin main && \
           sudo docker compose -f docker-compose.prod.yml up -d --build && \
