@@ -2,14 +2,14 @@
 set -e
 
 # Configuration
-INSTANCE_NAME="airflow-vm-free-tier"
+INSTANCE_NAME="airflow-vm-standard"
 ZONE="us-west1-b" # Oregon (Free Tier eligible)
-MACHINE_TYPE="e2-micro" # Free Tier eligible (2 vCPU, 1 GB RAM)
+MACHINE_TYPE="e2-medium" # Standard (2 vCPU, 4 GB RAM)
 IMAGE_PROJECT="ubuntu-os-cloud"
 IMAGE_FAMILY="ubuntu-2204-lts"
 DISK_SIZE="30GB" # Free Tier eligible (up to 30GB)
 
-echo "Creating Free Tier VM instance $INSTANCE_NAME in $ZONE..."
+echo "Creating Standard VM instance $INSTANCE_NAME in $ZONE..."
 gcloud compute instances create $INSTANCE_NAME \
     --zone=$ZONE \
     --machine-type=$MACHINE_TYPE \
@@ -19,18 +19,18 @@ gcloud compute instances create $INSTANCE_NAME \
     --boot-disk-type=pd-standard \
     --tags=airflow-server,http-server
 
-echo "Creating firewall rule to allow port 8080 (Airflow) and 5432 (Postgres)..."
+echo "Creating firewall rule to allow port 22 (SSH), 8080 (Airflow) and 5432 (Postgres)..."
 # Check if rule exists first to avoid error
 if ! gcloud compute firewall-rules describe allow-airflow-http &>/dev/null; then
     gcloud compute firewall-rules create allow-airflow-http \
-        --allow tcp:8080,tcp:5432 \
+        --allow tcp:22,tcp:8080,tcp:5432 \
         --target-tags=airflow-server \
-        --description="Allow Airflow and Postgres access"
+        --description="Allow SSH, Airflow, and Postgres access"
 else
-    # Update existing rule to include 5432
+    # Update existing rule to include 22, 5432
     echo "Updating existing firewall rule allow-airflow-http..."
     gcloud compute firewall-rules update allow-airflow-http \
-        --allow tcp:8080,tcp:5432
+        --allow tcp:22,tcp:8080,tcp:5432
 fi
 
 echo "VM Creation Complete!"
