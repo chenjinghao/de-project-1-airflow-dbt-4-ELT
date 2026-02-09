@@ -32,19 +32,27 @@ jobs:
 
     - name: Deploy to VM
       run: |
-        # Create .env file content securely
-        # Note: We use EOF to write multiline content to a file on the remote server
-        ENV_FILE_CONTENT="POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+        # Create .env file securely on the runner
+        cat <<EOF > .env
+        POSTGRES_USER=${{ secrets.POSTGRES_USER }}
         POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
         POSTGRES_DB=${{ secrets.POSTGRES_DB }}
         MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
-        MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}"
+        MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
+        EOF
 
-
+        # Ensure directory exists on VM
         gcloud compute ssh ${{ secrets.INSTANCE_NAME }} --zone=${{ secrets.ZONE }} --command="
           if [ ! -d ~/airflow_project ]; then
             git clone https://github.com/${{ github.repository }}.git ~/airflow_project
           fi
+        "
+
+        # Transfer .env file to VM
+        gcloud compute scp .env ${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
+
+        # Execute Deployment
+        gcloud compute ssh ${{ secrets.INSTANCE_NAME }} --zone=${{ secrets.ZONE }} --command="
           cd ~/airflow_project &&
           git pull origin main &&
           sudo docker builder prune -f &&
