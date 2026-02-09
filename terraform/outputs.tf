@@ -23,8 +23,8 @@ output "minio_console_url" {
   value       = "http://${google_compute_instance.airflow_vm.network_interface[0].access_config[0].nat_ip}:${var.allow_minio_console_port}"
 }
 
-output "postgres_connection" {
-  description = "Postgres connection string"
+output "postgres_endpoint" {
+  description = "Postgres connection endpoint (IP:port)"
   value       = "${google_compute_instance.airflow_vm.network_interface[0].access_config[0].nat_ip}:${var.allow_postgres_port}"
 }
 

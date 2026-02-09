@@ -57,6 +57,10 @@ This Terraform configuration creates:
 2. **Edit `terraform.tfvars`** with your GCP project ID:
    ```hcl
    project_id = "your-gcp-project-id"
+   
+   # IMPORTANT: Restrict access in production!
+   # allowed_source_ranges = ["YOUR_IP/32"]  # Replace with your IP
+   # environment = "production"
    ```
 
 3. **Initialize Terraform**:
@@ -126,6 +130,10 @@ After Terraform creates your infrastructure:
 | `instance_name` | VM instance name | airflow-vm-free-tier | No |
 | `machine_type` | VM machine type | e2-micro | No |
 | `disk_size_gb` | Boot disk size | 30 | No |
+| `environment` | Environment label | development | No |
+| `allowed_source_ranges` | CIDR blocks for access | ["0.0.0.0/0"] | No |
+
+**⚠️ Security Warning**: The default `allowed_source_ranges` allows access from ANY IP address. For production deployments, restrict this to specific IP addresses or CIDR blocks (e.g., `["203.0.113.0/24"]` or `["YOUR_IP/32"]`).
 
 ## Outputs
 
@@ -136,7 +144,7 @@ After applying, Terraform provides:
 - `public_ip`: Public IP address
 - `airflow_url`: Direct URL to Airflow UI
 - `minio_console_url`: Direct URL to MinIO Console
-- `postgres_connection`: PostgreSQL connection endpoint
+- `postgres_endpoint`: PostgreSQL connection endpoint (IP:port)
 - `ssh_command`: Command to SSH into the VM
 
 ## Destroying Infrastructure

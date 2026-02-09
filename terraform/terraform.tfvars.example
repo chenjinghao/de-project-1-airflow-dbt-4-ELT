@@ -9,3 +9,8 @@ project_id = "your-gcp-project-id"
 # instance_name       = "airflow-vm-free-tier"
 # machine_type        = "e2-micro"
 # disk_size_gb        = 30
+# environment         = "development"
+
+# SECURITY: Restrict access to specific IP addresses in production!
+# Replace with your IP address or CIDR block
+# allowed_source_ranges = ["YOUR_IP/32"]

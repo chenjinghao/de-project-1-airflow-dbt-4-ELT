@@ -63,7 +63,7 @@ resource "google_compute_instance" "airflow_vm" {
   EOF
 
   labels = {
-    environment = "production"
+    environment = var.environment
     application = "airflow"
   }
 

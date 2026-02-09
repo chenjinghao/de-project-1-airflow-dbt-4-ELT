@@ -12,8 +12,8 @@ resource "google_compute_firewall" "allow_airflow_http" {
     ]
   }
 
-  source_ranges = ["0.0.0.0/0"]
+  source_ranges = var.allowed_source_ranges
   target_tags   = ["airflow-server"]
 
-  description = "Allow Airflow, Postgres, and MinIO access"
+  description = "Allow Airflow, Postgres, and MinIO access. WARNING: Review and restrict source_ranges in production!"
 }

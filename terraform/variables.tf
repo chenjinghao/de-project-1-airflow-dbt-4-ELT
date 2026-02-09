@@ -68,3 +68,15 @@ variable "allow_minio_console_port" {
   type        = number
   default     = 9001
 }
+
+variable "environment" {
+  description = "Environment label for the infrastructure (e.g., development, staging, production)"
+  type        = string
+  default     = "development"
+}
+
+variable "allowed_source_ranges" {
+  description = "CIDR blocks allowed to access the services. Default allows all IPs - RESTRICT THIS IN PRODUCTION!"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
