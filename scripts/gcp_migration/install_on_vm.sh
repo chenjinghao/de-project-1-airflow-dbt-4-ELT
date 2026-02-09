@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Enabling Swap Memory (Critical for e2-micro)..."
+echo "Enabling Swap Memory (Recommended for stability)..."
 # Create a 2GB swapfile
 if [ ! -f /swapfile ]; then
     sudo fallocate -l 2G /swapfile
@@ -41,7 +41,7 @@ mkdir -p logs plugins include dags
 # The container runs as 'astro' (uid 50000).
 sudo chown -R 50000:0 logs plugins include dags
 
-echo "Starting Airflow & MinIO (Free Tier Optimized)..."
+echo "Starting Airflow & MinIO (Standard Production Config)..."
 # Ensure we are in the directory with docker-compose.prod.yml
 if [ -f "docker-compose.prod.yml" ]; then
     sudo docker compose -f docker-compose.prod.yml up -d --build

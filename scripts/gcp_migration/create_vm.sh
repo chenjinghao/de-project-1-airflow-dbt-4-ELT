@@ -2,14 +2,14 @@
 set -e
 
 # Configuration
-INSTANCE_NAME="airflow-vm-free-tier"
+INSTANCE_NAME="airflow-vm-standard"
 ZONE="us-west1-b" # Oregon (Free Tier eligible)
-MACHINE_TYPE="e2-micro" # Free Tier eligible (2 vCPU, 1 GB RAM)
+MACHINE_TYPE="e2-medium" # Standard (2 vCPU, 4 GB RAM)
 IMAGE_PROJECT="ubuntu-os-cloud"
 IMAGE_FAMILY="ubuntu-2204-lts"
 DISK_SIZE="30GB" # Free Tier eligible (up to 30GB)
 
-echo "Creating Free Tier VM instance $INSTANCE_NAME in $ZONE..."
+echo "Creating Standard VM instance $INSTANCE_NAME in $ZONE..."
 gcloud compute instances create $INSTANCE_NAME \
     --zone=$ZONE \
     --machine-type=$MACHINE_TYPE \
