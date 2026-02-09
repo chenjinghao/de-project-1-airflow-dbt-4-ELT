@@ -264,10 +264,7 @@ docker compose -f docker-compose.prod.yml logs -f
 docker compose -f docker-compose.prod.yml logs -f airflow-init
 ```
 
-Wait until you see a message like:
-```
-airflow-init  | Admin user created successfully.
-```
+Wait until the `airflow-init` container finishes (it creates the database and admin user, then exits).
 
 Then check all containers are running:
 
