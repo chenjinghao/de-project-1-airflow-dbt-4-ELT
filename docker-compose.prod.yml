@@ -7,7 +7,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
-    AIRFLOW_CONN_POSTGRES_STOCK: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/stocks_db
+    AIRFLOW_CONN_POSTGRES_STOCK: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     # MinIO (S3) Connection
     AIRFLOW_CONN_AWS_DEFAULT: aws://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@?host=http%3A%2F%2Fminio%3A9000
     # Extreme low memory tuning for Free Tier e2-micro
@@ -46,7 +46,7 @@ services:
     # Tuned for extremely low memory
     command: postgres -c shared_buffers=64MB -c max_connections=25
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
       interval: 10s
       retries: 5
     restart: unless-stopped
