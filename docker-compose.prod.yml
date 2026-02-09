@@ -47,7 +47,7 @@ services:
     # Tuned for extremely low memory
     command: postgres -c shared_buffers=64MB -c max_connections=25
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
       interval: 10s
       retries: 5
     restart: unless-stopped
