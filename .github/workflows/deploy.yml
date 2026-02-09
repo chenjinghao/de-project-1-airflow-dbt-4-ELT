@@ -40,15 +40,12 @@ jobs:
         MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
         MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}"
 
-        # Use SSH_USERNAME to connect as the correct user
-        gcloud compute ssh ${SSH_USERNAME}@${INSTANCE_NAME} --zone=$ZONE --command="
-          cd ~/airflow_project && \
-          git pull origin main && \
-          echo \"$ENV_FILE_CONTENT\" > .env && \
-          # Clean up stale Docker BuildKit state
-          docker builder prune -f
-          docker buildx rm --all-inactive 2>/dev/null || true
-          docker compose -f docker-compose.prod.yml build --no-cache && \
-          sudo docker compose -f docker-compose.prod.yml up -d --build && \
-          sudo docker image prune -f
+
+        gcloud compute ssh ${{ secrets.GCE_INSTANCE }} --zone=${{ secrets.GCE_ZONE }} --command="
+          cd ~/airflow_project &&
+          git pull origin main &&
+          sudo docker builder prune -f &&
+          sudo docker buildx rm --all-inactive -f 2>/dev/null || true &&
+          sudo docker compose -f docker-compose.prod.yml build --no-cache &&
+          sudo docker compose -f docker-compose.prod.yml up -d
         "
