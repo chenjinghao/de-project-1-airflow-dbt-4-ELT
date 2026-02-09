@@ -13,4 +13,5 @@ include/data/
 include/helpers/
 logs/
 include/gcp/
+include/terraform/
 include/helpers/
