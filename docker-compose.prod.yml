@@ -7,7 +7,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
-    AIRFLOW_CONN_POSTGRES_STOCK: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    AIRFLOW_CONN_POSTGRES_STOCK: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/stocks_db
     # MinIO (S3) Connection
     AIRFLOW_CONN_AWS_DEFAULT: aws://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@?host=http%3A%2F%2Fminio%3A9000
     # Extreme low memory tuning for Free Tier e2-micro
@@ -87,6 +87,13 @@ services:
       timeout: 30s
       retries: 5
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      airflow-init:
+        condition: service_completed_successfully
     deploy:
       resources:
         limits:
@@ -98,6 +105,13 @@ services:
     <<: *airflow-common
     command: scheduler
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      airflow-init:
+        condition: service_completed_successfully
     deploy:
       resources:
         limits:
@@ -122,6 +136,7 @@ services:
     command: >
       "export PGPASSWORD=${POSTGRES_PASSWORD} &&
        psql -h postgres -U ${POSTGRES_USER} -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname = '${POSTGRES_DB}'\" | grep -q 1 || psql -h postgres -U ${POSTGRES_USER} -d postgres -c \"CREATE DATABASE \\\"${POSTGRES_DB}\\\"\" &&
+       psql -h postgres -U ${POSTGRES_USER} -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'stocks_db'\" | grep -q 1 || psql -h postgres -U ${POSTGRES_USER} -d postgres -c \"CREATE DATABASE stocks_db\" &&
        airflow db migrate && 
        airflow users create --role Admin --username admin --email admin@example.com --firstname Admin --lastname User --password admin || true"
     restart: "no"
