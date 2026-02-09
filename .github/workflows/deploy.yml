@@ -38,9 +38,11 @@ jobs:
         POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
         POSTGRES_DB=${{ secrets.POSTGRES_DB }}
         MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
-        # Create .env file securely on the runner
-        cat <<EOF > .env
-        POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+        MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
+        EOF
+
+        # Transfer .env file to the VM
+        gcloud compute scp .env ${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
 
         gcloud compute ssh ${{ secrets.INSTANCE_NAME }} --zone=${{ secrets.ZONE }} --command="
           if [ ! -d ~/airflow_project ]; then
