@@ -44,6 +44,10 @@ sudo chown -R 50000:0 logs plugins include dags
 echo "Starting Airflow & MinIO (Standard Production Config)..."
 # Ensure we are in the directory with docker-compose.prod.yml
 if [ -f "docker-compose.prod.yml" ]; then
+    # Stop existing containers to avoid port conflicts
+    echo "Stopping any existing containers..."
+    sudo docker compose -f docker-compose.prod.yml down --remove-orphans || true
+
     sudo docker compose -f docker-compose.prod.yml up -d --build
     echo "Airflow started! Access it at http://<VM_IP>:8080"
     echo "MinIO Console started! Access it at http://<VM_IP>:9001 (User: minio, Pass: minio123)"

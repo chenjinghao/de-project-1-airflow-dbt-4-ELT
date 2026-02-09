@@ -103,3 +103,11 @@ If you cannot SSH into the VM (`gcloud compute ssh ...` fails or times out):
     ```bash
     gcloud compute os-login describe-profile
     ```
+
+### Port Conflict (e.g., Bind for 0.0.0.0:9000 failed)
+If deployment fails with "port is already allocated", another process or a previous Docker container might still be running.
+Run the following to clean up before retrying:
+```bash
+docker compose -f docker-compose.prod.yml down --remove-orphans
+bash scripts/gcp_migration/install_on_vm.sh
+```
