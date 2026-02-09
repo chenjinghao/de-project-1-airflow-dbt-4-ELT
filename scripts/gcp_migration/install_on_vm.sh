@@ -48,6 +48,16 @@ if [ -f "docker-compose.prod.yml" ]; then
     echo "Stopping any existing containers..."
     sudo docker compose -f docker-compose.prod.yml down --remove-orphans || true
     
+    # Forcefully stop any containers holding our ports (fixes "port already allocated" errors from previous runs)
+    for port in 5432 8080 9000 9001; do
+        pids=$(sudo docker ps -q --filter "publish=$port")
+        if [ -n "$pids" ]; then
+            echo "Force stopping container(s) on port $port: $pids"
+            sudo docker stop $pids || true
+            sudo docker rm $pids || true
+        fi
+    done
+
     sudo docker compose -f docker-compose.prod.yml up -d --build
     echo "Airflow started! Access it at http://<VM_IP>:8080"
     echo "MinIO Console started! Access it at http://<VM_IP>:9001 (User: minio, Pass: minio123)"
