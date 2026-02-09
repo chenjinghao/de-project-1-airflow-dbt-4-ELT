@@ -15,3 +15,4 @@ logs/
 include/gcp/
 include/terraform/
 include/helpers/
+secret
