@@ -15,4 +15,4 @@ logs/
 include/gcp/
 include/terraform/
 include/helpers/
-secret/my-de-project-485605-1addd9799630.json
+secret/
