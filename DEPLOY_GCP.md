@@ -34,7 +34,7 @@ This guide outlines how to deploy your Airflow project to a Google Cloud Compute
     git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git ~/airflow_project
     cd ~/airflow_project
     ```
-    *Note: If your repo is private, you may need to use a Personal Access Token (PAT) or SSH key.*
+    *Note: If your repo is private, use HTTPS with a Personal Access Token (PAT) or set up an SSH key on the VM and add it to your GitHub account.*
 
 3.  Run the installation script to set up Docker, Swap Memory, and start Airflow:
     ```bash
@@ -82,3 +82,24 @@ The included workflow `.github/workflows/deploy.yml` will:
 ## Maintenance
 -   **Logs**: `docker compose -f docker-compose.prod.yml logs -f`
 -   **Stop**: `docker compose -f docker-compose.prod.yml down`
+
+## Troubleshooting
+
+### Unable to connect via SSH
+If you cannot SSH into the VM (`gcloud compute ssh ...` fails or times out):
+
+1.  **Check Firewall Rules**: Ensure port 22 is open.
+    ```bash
+    gcloud compute firewall-rules list --filter="name=allow-airflow-http"
+    ```
+    You should see `tcp:22` in the `allow` column. If not, re-run `scripts/gcp_migration/create_vm.sh` to update the rule.
+
+2.  **Use IAP Tunneling**: If you are on a restricted network or the VM lacks a public IP, try using Identity-Aware Proxy (IAP):
+    ```bash
+    gcloud compute ssh airflow-vm-standard --zone=us-west1-b --tunnel-through-iap
+    ```
+
+3.  **Check OS Login**: Ensure you have permissions to log in.
+    ```bash
+    gcloud compute os-login describe-profile
+    ```
