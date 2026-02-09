@@ -19,18 +19,18 @@ gcloud compute instances create $INSTANCE_NAME \
     --boot-disk-type=pd-standard \
     --tags=airflow-server,http-server
 
-echo "Creating firewall rule to allow port 22 (SSH), 8080 (Airflow) and 5432 (Postgres)..."
+echo "Creating firewall rule to allow port 22 (SSH), 8080 (Airflow), 9001 (MinIO) and 5432 (Postgres)..."
 # Check if rule exists first to avoid error
 if ! gcloud compute firewall-rules describe allow-airflow-http &>/dev/null; then
     gcloud compute firewall-rules create allow-airflow-http \
-        --allow tcp:22,tcp:8080,tcp:5432 \
+        --allow tcp:22,tcp:8080,tcp:9001,tcp:5432 \
         --target-tags=airflow-server \
-        --description="Allow SSH, Airflow, and Postgres access"
+        --description="Allow SSH, Airflow, MinIO, and Postgres access"
 else
-    # Update existing rule to include 22, 5432
+    # Update existing rule to include 22, 5432, 9001
     echo "Updating existing firewall rule allow-airflow-http..."
     gcloud compute firewall-rules update allow-airflow-http \
-        --allow tcp:22,tcp:8080,tcp:5432
+        --allow tcp:22,tcp:8080,tcp:9001,tcp:5432
 fi
 
 echo "VM Creation Complete!"
