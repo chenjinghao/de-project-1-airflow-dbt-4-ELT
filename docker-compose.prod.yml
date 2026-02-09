@@ -76,9 +76,9 @@ services:
     networks:
       - airflow
 
-  airflow-webserver:
+  airflow-apiserver:
     <<: *airflow-common
-    command: airflow api-server
+    command: api-server
     ports:
       - "8080:8080"
     healthcheck:
@@ -96,7 +96,7 @@ services:
 
   airflow-scheduler:
     <<: *airflow-common
-    command: airflow scheduler
+    command: scheduler
     restart: unless-stopped
     deploy:
       resources:
@@ -104,10 +104,10 @@ services:
           memory: 256M
     networks:
       - airflow
-
+  
   # airflow-triggerer:
   #   <<: *airflow-common
-  #   command: airflow triggerer
+  #   command: triggerer
   #   restart: unless-stopped
   #   deploy:
   #     resources:
