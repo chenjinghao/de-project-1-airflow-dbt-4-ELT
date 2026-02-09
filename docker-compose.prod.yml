@@ -44,7 +44,7 @@ services:
     ports:
       - "5432:5432"
     # Tuned for extremely low memory
-    command: postgres -c shared_buffers=64MB -c max_connections=25
+    command: postgres -c shared_buffers=32MB -c max_connections=20
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
       interval: 10s
@@ -53,7 +53,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 256M
     networks:
       - airflow
 
@@ -78,7 +78,7 @@ services:
 
   airflow-apiserver:
     <<: *airflow-common
-    command: api-server
+    command: webserver
     ports:
       - "8080:8080"
     healthcheck:
@@ -90,7 +90,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 450M
+          memory: 384M
     networks:
       - airflow
 
@@ -101,7 +101,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 220M
     networks:
       - airflow
   
