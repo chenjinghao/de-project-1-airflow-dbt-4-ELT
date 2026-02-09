@@ -58,6 +58,8 @@ resource "google_compute_instance" "airflow_vm" {
     fi
     
     # Prepare directories with proper permissions
+    # UID 50000 is the default Airflow container user (astro)
+    # GID 0 is the root group which allows proper access
     mkdir -p /opt/airflow/{logs,plugins,include,dags}
     chown -R 50000:0 /opt/airflow/{logs,plugins,include,dags}
   EOF
