@@ -46,7 +46,7 @@ services:
     # Tuned for extremely low memory
     command: postgres -c shared_buffers=64MB -c max_connections=25
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
       interval: 10s
       retries: 5
     restart: unless-stopped
@@ -120,7 +120,9 @@ services:
     <<: *airflow-common
     entrypoint: ["/bin/bash", "-c"]
     command: >
-      "airflow db migrate && 
+      "export PGPASSWORD=${POSTGRES_PASSWORD} &&
+       psql -h postgres -U ${POSTGRES_USER} -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname = '${POSTGRES_DB}'\" | grep -q 1 || psql -h postgres -U ${POSTGRES_USER} -d postgres -c \"CREATE DATABASE \\\"${POSTGRES_DB}\\\"\" &&
+       airflow db migrate && 
        airflow users create --role Admin --username admin --email admin@example.com --firstname Admin --lastname User --password admin || true"
     restart: "no"
     networks:
