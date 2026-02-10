@@ -23,7 +23,9 @@ def is_holiday(
     today = np.datetime64(today)
 
     cal = pandas_market_calendars.get_calendar(calendar)
-    holidays = cal.holidays().holidays
+    holidays = cal.holidays()
+    if hasattr(holidays, 'holidays'):
+        holidays = holidays.holidays
     is_holiday = today in holidays
 
     if is_holiday:
