@@ -1,0 +1,50 @@
+name: Deploy to Google Cloud VM
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Update VM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to VM
+        run: |
+          # Create .env file securely on the runner
+          cat <<EOF > .env
+          AIRFLOW__CORE__TEST_CONNECTION=enabled
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}
+          MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
+          MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
+          EOF
+
+          # 1. Update Code on VM
+          gcloud compute ssh ${{ secrets.INSTANCE_NAME }} \
+            --zone=${{ secrets.ZONE }} \
+            --command="cd ~/airflow_project && git pull origin main"
+
+          # 2. Copy .env file to VM
+          gcloud compute scp .env ${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
+
+          # 3. Build and Start Containers
+          gcloud compute ssh ${{ secrets.INSTANCE_NAME }} --zone=${{ secrets.ZONE }} --command="
+            cd ~/airflow_project &&
+            astro dev start
+          "

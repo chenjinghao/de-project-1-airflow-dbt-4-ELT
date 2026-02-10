@@ -1,125 +1,67 @@
-# version: "3.1"
 services:
 
-  # webserver:
-  #   networks:
-  #     - default
-
-  # scheduler:
-  #   networks:
-  #     - default
-
-  # triggerer:
-  #   networks:
-  #     - default
-
-  # minio:
-  #   image: minio/minio
-  #   container_name: minio
-  #   hostname: minio
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ./include/data/minio:/data
-  #   ports:
-  #     - 19000:9000
-  #     - 19001:9001
-  #   environment:
-  #     MINIO_ROOT_USER: minio
-  #     MINIO_ROOT_PASSWORD: minio123
-  #   command: server /data --console-address ":9001"
-  #   networks:
-  #     - airflow
-
-  # spark-master:
-  #   image: airflow/spark-master
-  #   build: ./spark/master
-  #   container_name: spark-master
-  #   ports:
-  #     - "8082:8080"
-  #     - "7077:7077"
-  #   environment:
-  #     - INIT_DAEMON_STEP=setup_spark
-  #   networks:
-  #     - airflow
-
-  # spark-worker:
-  #   image: airflow/spark-worker
-  #   build: ./spark/worker
-  #   container_name: spark-worker
-  #   depends_on:
-  #     - spark-master
-  #   ports:
-  #     - "8081:8081"
-  #   environment:
-  #     - "SPARK_MASTER=spark://spark-master:7077"
-  #   networks:
-  #     - airflow
-
-  metabase:
-    image: metabase/metabase:v0.50.4
-    restart: always
-    ports:
-      - 3200:3000
+  minio:
+    image: minio/minio
+    container_name: minio
+    hostname: minio
+    restart: unless-stopped
     volumes:
-      - ./include/data/metabase:/metabase-data
+      - ./include/data/minio:/data
+    ports:
+      - 19000:9000
+      - 19001:9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
     networks:
       - airflow
-
-  # docker-proxy:
-  #   image: alpine/socat
-  #   command: "TCP4-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock"
-  #   ports:
-  #     - "12376:2375"
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #   networks:
-  #     - airflow
 
   database:
     image: postgres:12.6
     container_name: postgres_stocks_db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: stocks_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5000:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - ./include/data/postgres:/var/lib/postgresql/data
     networks:
       - airflow
 
-  pgadmin:
-    image: dpage/pgadmin4:9.11
-    container_name: pgadmin
-    depends_on:
-      - database
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    ports:
-      - "5800:80"
-    volumes:
-      - ./include/data/pgadmin:/var/lib/pgadmin
-    networks:
-      - airflow
-    user: "root"
+  # pgadmin:
+  #   image: dpage/pgadmin4:9.11
+  #   container_name: pgadmin
+  #   depends_on:
+  #     - database
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
+  #   ports:
+  #     - "5800:80"
+  #   volumes:
+  #     - ./include/data/pgadmin:/var/lib/pgadmin
+  #   networks:
+  #     - airflow
+  #   user: "root"
     
-  dbt:
-    image: ghcr.io/dbt-labs/dbt-postgres:1.9.latest
-    container_name: dbt_container
-    working_dir: /usr/app/
-    environment:
-      DBT_PROFILES_DIR: /root/.dbt
-    volumes:
-      - ./include/dbt/my_project:/usr/app/
-      - ./include/dbt:/root/.dbt
-    depends_on:
-      - database
-    networks:
-      - airflow
-    command: run
+  # dbt:
+  #   image: ghcr.io/dbt-labs/dbt-postgres:1.9.latest
+  #   container_name: dbt_container
+  #   working_dir: /usr/app/
+  #   environment:
+  #     DBT_PROFILES_DIR: /root/.dbt
+  #   volumes:
+  #     - ./include/dbt/my_project:/usr/app/
+  #     - ./include/dbt:/root/.dbt
+  #   depends_on:
+  #     - database
+  #   networks:
+  #     - airflow
+  #   command: run
     
 networks:
   airflow:
