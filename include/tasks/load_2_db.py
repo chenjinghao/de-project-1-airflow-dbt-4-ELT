@@ -10,7 +10,7 @@ from include.connection.connect_database import _connect_database
 # Constants
 TABLE_NAME = "raw_most_active_stocks"
 BIZ_LOOKUP_TABLE_NAME = "biz_info_lookup"
-BUCKET_NAME = "bronze-my-de-project-485605"
+BUCKET_NAME = "bronze"
 
 def _ensure_table(cur, table_name):
     """Ensure the main table exists in Postgres."""
