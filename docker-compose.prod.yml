@@ -32,6 +32,8 @@ x-airflow-common: &airflow-common
       condition: service_healthy
     minio:
       condition: service_started
+    airflow-init-perms:
+      condition: service_completed_successfully
   networks:
     - airflow
 
@@ -134,6 +136,18 @@ services:
        airflow db migrate &&
        airflow users create --role Admin --username admin --email admin@example.com --firstname Admin --lastname User --password ${AIRFLOW_ADMIN_PASSWORD:-admin} || true &&
        airflow pools set api_pool 1 'Alpha Vantage API rate limiting pool' || true"
+    restart: "no"
+    networks:
+      - airflow
+
+  airflow-init-perms:
+    image: alpine:latest
+    user: root
+    command: sh -c "chown -R 50000:0 /usr/local/airflow/logs /usr/local/airflow/dags /usr/local/airflow/plugins"
+    volumes:
+      - ./logs:/usr/local/airflow/logs
+      - ./dags:/usr/local/airflow/dags
+      - ./plugins:/usr/local/airflow/plugins
     restart: "no"
     networks:
       - airflow
