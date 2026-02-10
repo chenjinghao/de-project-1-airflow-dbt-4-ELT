@@ -116,7 +116,7 @@ services:
   
   airflow-triggerer:
     <<: *airflow-common
-    command: triggerer
+    command: airflow-triggerer
     restart: unless-stopped
     deploy:
       resources:
