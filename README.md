@@ -39,6 +39,39 @@ Deploy Your Project to Astronomer
 
 If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
 
+Deploy to Google Cloud Platform (GCP)
+=====================================
+
+This project includes infrastructure-as-code options for deploying to GCP:
+
+Terraform (Recommended)
+----------------------
+
+Use Terraform for declarative infrastructure management:
+
+1. Navigate to the terraform directory:
+   ```bash
+   cd terraform
+   ```
+
+2. Follow the instructions in `terraform/README.md` to:
+   - Configure your GCP credentials
+   - Initialize Terraform
+   - Create a Free Tier eligible VM
+   - Deploy Airflow with PostgreSQL and MinIO
+
+Benefits: Version-controlled infrastructure, state management, easy replication.
+
+Bash Scripts (Alternative)
+--------------------------
+
+For quick manual deployment, bash scripts are available in `scripts/gcp_migration/`:
+
+- `create_vm.sh`: Creates a GCP VM instance
+- `install_on_vm.sh`: Installs Docker and starts Airflow
+
+These scripts are useful for quick testing but lack the benefits of infrastructure-as-code.
+
 Contact
 =======
 
