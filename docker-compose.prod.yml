@@ -143,7 +143,7 @@ services:
   airflow-init-perms:
     image: alpine:latest
     user: root
-    command: sh -c "chown -R 50000:0 /usr/local/airflow/logs /usr/local/airflow/dags /usr/local/airflow/plugins"
+    command: sh -c "chown -R 50000:0 /usr/local/airflow/logs /usr/local/airflow/dags /usr/local/airflow/plugins && chmod -R 777 /usr/local/airflow/logs"
     volumes:
       - ./logs:/usr/local/airflow/logs
       - ./dags:/usr/local/airflow/dags
