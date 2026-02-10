@@ -122,8 +122,9 @@ services:
     command: >
       "export PGPASSWORD=${POSTGRES_PASSWORD} &&
        psql -h postgres -U ${POSTGRES_USER} -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname = '${POSTGRES_DB}'\" | grep -q 1 || psql -h postgres -U ${POSTGRES_USER} -d postgres -c \"CREATE DATABASE \\\"${POSTGRES_DB}\\\"\" &&
-       airflow db migrate && 
-       airflow users create --role Admin --username admin --email admin@example.com --firstname Admin --lastname User --password admin || true"
+       airflow db migrate &&
+       airflow users create --role Admin --username admin --email admin@example.com --firstname Admin --lastname User --password ${AIRFLOW_ADMIN_PASSWORD:-admin} || true &&
+       airflow pools set api_pool 1 'Alpha Vantage API rate limiting pool' || true"
     restart: "no"
     networks:
       - airflow
