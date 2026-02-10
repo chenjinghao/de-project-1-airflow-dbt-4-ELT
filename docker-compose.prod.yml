@@ -14,7 +14,7 @@ x-airflow-common: &airflow-common
     # MinIO (S3) Connection
     AIRFLOW_CONN_AWS_DEFAULT: aws://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@?host=http%3A%2F%2Fminio%3A9000
     # Standard production tuning (4GB RAM)
-    AIRFLOW__CORE__PARALLELISM: 4
+    AIRFLOW__CORE__PARALLELISM: 2
     AIRFLOW__CORE__DAG_CONCURRENCY: 4
     AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: 4
     AIRFLOW__API__WORKERS: 1
@@ -59,7 +59,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1024M
+          memory: 1536M
     networks:
       - airflow
 
