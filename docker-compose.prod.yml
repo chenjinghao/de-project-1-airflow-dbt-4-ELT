@@ -114,16 +114,16 @@ services:
     networks:
       - airflow
   
-  # airflow-triggerer:
-  #   <<: *airflow-common
-  #   command: triggerer
-  #   restart: unless-stopped
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 512M
-  #   networks:
-  #     - airflow
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - airflow
   
   airflow-init:
     <<: *airflow-common
