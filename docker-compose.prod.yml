@@ -101,6 +101,9 @@ services:
   airflow-scheduler:
     <<: *airflow-common
     hostname: airflow-scheduler
+    environment:
+      <<: *airflow-common-env
+      HOSTNAME: airflow-scheduler
     command: airflow scheduler
     restart: unless-stopped
     deploy:
