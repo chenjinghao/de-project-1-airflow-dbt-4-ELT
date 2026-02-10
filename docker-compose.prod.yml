@@ -6,7 +6,7 @@ x-airflow-common: &airflow-common
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
-    AIRFLOW__WEBSERVER__SECRET_KEY: 'your-secret-key-change-me-in-production'
+    AIRFLOW__API__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
     AIRFLOW_CONN_POSTGRES_STOCK: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -16,7 +16,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__PARALLELISM: 4
     AIRFLOW__CORE__DAG_CONCURRENCY: 4
     AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: 4
-    AIRFLOW__API__WORKERS: 4
+    AIRFLOW__API__WORKERS: 1
     AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 30
     AIRFLOW__SCHEDULER__PARSING_PROCESSES: 2
     
@@ -25,6 +25,7 @@ x-airflow-common: &airflow-common
     - ./include:/usr/local/airflow/include
     - ./plugins:/usr/local/airflow/plugins
     - ./logs:/usr/local/airflow/logs
+    - ./webserver_config.py:/usr/local/airflow/webserver_config.py
   depends_on:
     postgres:
       condition: service_healthy
