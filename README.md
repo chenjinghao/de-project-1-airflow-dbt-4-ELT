@@ -43,3 +43,25 @@ Contact
 =======
 
 The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+
+Running on Limited Resources (VM with 2 vCPUs, 4GB RAM)
+========================================================
+
+For running this project on a VM with limited resources (2 vCPUs, 4GB RAM), we've provided optimized Docker Compose configurations:
+
+1. **Minimal Setup** (Recommended for VM):
+   ```bash
+   docker compose -f docker-compose.vm-minimal.yml up --build -d
+   ```
+   
+   This setup includes only the essential services: PostgreSQL, Airflow Webserver, and Airflow Scheduler.
+
+2. **Using the startup script**:
+   - On Windows: Run `start-vm.bat`
+   - On Linux/Mac: Run `chmod +x start-vm.sh && ./start-vm.sh`
+
+The optimized configurations include:
+- Reduced memory allocation for all services
+- Lowered parallelism and concurrency settings
+- Optimized PostgreSQL settings for limited memory
+- Simplified service dependencies
