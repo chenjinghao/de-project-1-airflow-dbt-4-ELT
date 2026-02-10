@@ -104,7 +104,7 @@ services:
     environment:
       <<: *airflow-common-env
       HOSTNAME: airflow-scheduler
-      AIRFLOW__CORE__HOSTNAME_CALLABLE: socket:gethostname
+      AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.gethostname
     command: airflow scheduler
     restart: unless-stopped
     deploy:
