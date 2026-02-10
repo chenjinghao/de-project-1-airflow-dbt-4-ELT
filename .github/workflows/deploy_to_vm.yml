@@ -36,15 +36,15 @@ jobs:
           EOF
 
           # 1. Update Code on VM
-          gcloud compute ssh ${{ secrets.INSTANCE_NAME }} \
+          gcloud compute ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
             --command="cd ~/airflow_project && git pull origin main"
 
           # 2. Copy .env file to VM
-          gcloud compute scp .env ${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
+          gcloud compute scp .env ${{ secrets.SSH_USERNAME }}@${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
 
           # 3. Build and Start Containers
-          gcloud compute ssh ${{ secrets.INSTANCE_NAME }} --zone=${{ secrets.ZONE }} --command="
+          gcloud compute ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.INSTANCE_NAME }} --zone=${{ secrets.ZONE }} --command="
             cd ~/airflow_project &&
             astro dev start
           "
