@@ -1,4 +1,4 @@
-airflow_connections:
+connections:
   - conn_id: minio
     conn_type: aws
     description: "MinIO Object Storage"
@@ -26,7 +26,7 @@ airflow_connections:
     conn_type: slack
     password: ${SLACK_API_TOKEN}
 
-airflow_pools:
+pools:
   - pool_name: api_pool
     pool_slot: 1
     pool_description: "Alpha Vantage API rate limiting"
