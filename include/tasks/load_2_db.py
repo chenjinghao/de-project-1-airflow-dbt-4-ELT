@@ -1,5 +1,7 @@
 import logging
 import json
+import os
+import psycopg2
 from psycopg2.extras import Json, execute_values
 from psycopg2 import sql
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -49,6 +51,20 @@ def _load_json(client, bucket_name, blob_name):
     data = blob.download_as_text()
     return json.loads(data)
 
+def _get_postgres_connection():
+    """Get Postgres connection from Airflow Hook or fallback to env vars."""
+    try:
+        hook = PostgresHook(postgres_conn_id="postgres_stock")
+        return hook.get_conn()
+    except Exception as e:
+        logging.warning(f"Connection 'postgres_stock' not found: {e}. Falling back to direct connection.")
+        return psycopg2.connect(
+            host="database",
+            user=os.getenv("POSTGRES_USER", "postgres"),
+            password=os.getenv("POSTGRES_PASSWORD", "postgres"),
+            dbname=os.getenv("POSTGRES_DB", "stocks_db")
+        )
+
 def load_to_db(**kwargs):
     """
     Accepts **kwargs to get the Airflow execution date (ds).
@@ -69,17 +85,8 @@ def load_to_db(**kwargs):
     logging.info("Connected to MinIO")
 
     logging.info("Connecting to Postgres...")
-    postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
-    
-    # Debug: Log connection details to verify host/port
-    try:
-        conn_details = postgres_hook.get_connection("postgres_stock")
-        logging.info(f"Attempting connection to Host: {conn_details.host}, Port: {conn_details.port}, Schema: {conn_details.schema}, User: {conn_details.login}")
-    except Exception as e:
-        logging.warning(f"Could not retrieve connection details: {e}")
-
     # 2. Use Context Manager for auto-commit and safe closing
-    with postgres_hook.get_conn() as conn:
+    with _get_postgres_connection() as conn:
         logging.info("Postgres connection established")
         with conn.cursor() as cur:
             
@@ -239,16 +246,7 @@ def load_2_db_biz_lookup(**kwargs):
     logging.info("Connected to MinIO")
 
     logging.info("Connecting to Postgres...")
-    postgres_hook = PostgresHook(postgres_conn_id="postgres_stock")
-    
-    # Debug: Log connection details to verify host/port
-    try:
-        conn_details = postgres_hook.get_connection("postgres_stock")
-        logging.info(f"Attempting connection to Host: {conn_details.host}, Port: {conn_details.port}, Schema: {conn_details.schema}, User: {conn_details.login}")
-    except Exception as e:
-        logging.warning(f"Could not retrieve connection details: {e}")
-
-    with postgres_hook.get_conn() as conn:
+    with _get_postgres_connection() as conn:
         logging.info("Postgres connection established")
         with conn.cursor() as cur:
 
