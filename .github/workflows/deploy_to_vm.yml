@@ -53,30 +53,12 @@ jobs:
           # 2. Copy .env file to VM
           gcloud compute scp .env $SSH_USER@${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
 
-          # 3. Run astro commands separately with TTY
-          echo "Running astro commands with TTY allocation..."
+
           
-          # First, run object import without TTY (it shouldn't need it)
+          # 3. Source .env on VM (if needed for subsequent commands)
           gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
             --command="
               cd ~/airflow_project && \
-              set -a && source .env && set +a && \
-              astro dev object import || echo 'Object import completed'
-            "
-          
-          # Stop containers if running
-          gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
-            --zone=${{ secrets.ZONE }} \
-            --command="
-              cd ~/airflow_project && \
-              astro dev stop
-            "
-          
-          # Start containers with TTY
-          gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
-            --zone=${{ secrets.ZONE }} \
-            --command="
-              cd ~/airflow_project && \
-              astro dev start --wait 5m
-            "
+              set -a && source .env && set +a"
+        
