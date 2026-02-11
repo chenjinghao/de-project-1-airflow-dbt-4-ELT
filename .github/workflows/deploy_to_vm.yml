@@ -98,9 +98,6 @@ jobs:
             --command="
               cd ~/airflow_project && \
               set -a && source .env && set +a && \
-              astro dev stop && \
-              sudo chown -R $USER:$USER . && \
-              astro dev start --wait 5m
             "
 
         
