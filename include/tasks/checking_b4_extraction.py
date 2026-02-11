@@ -3,6 +3,7 @@ import pendulum
 from include.connection.connect_database import _connect_database
 import pandas_market_calendars
 import numpy as np
+import io
 
 # BUCKET_NAME = "bronze-my-de-project-485605"
 BUCKET_NAME = "bronze"
@@ -49,6 +50,15 @@ def is_today_folder_exists(client, bucket_name=BUCKET_NAME, folder_name=None):
     folder = folder_name or f"{pendulum.today('America/New_York').to_date_string()}/"
     
     try:
+        if hasattr(client, "bucket_exists"):
+            # Minio implementation
+            # Check if any object starts with the folder prefix
+            objs = list(client.list_objects(bucket_name, prefix=folder, recursive=True))
+            if objs:
+                return True
+            logging.info("Folder does not exist: %s/%s", bucket_name, folder)
+            return False
+
         bucket = client.bucket(bucket_name)
         blob = bucket.blob(folder)
         if blob.exists():
@@ -75,6 +85,15 @@ def create_today_folder():
     folder = f"{pendulum.today('America/New_York').to_date_string()}/"
 
     try:
+        if hasattr(client, "make_bucket"):
+            if not client.bucket_exists(bucket_name):
+                client.make_bucket(bucket_name)
+                logging.info("Created bucket %s", bucket_name)
+            
+            client.put_object(bucket_name, folder, io.BytesIO(b""), 0)
+            logging.info("Created folder %s/%s", bucket_name, folder)
+            return f"{bucket_name}/{folder}"
+
         bucket = client.bucket(bucket_name)
         if not bucket.exists():
             client.create_bucket(bucket_name)
@@ -107,8 +126,13 @@ def check_files_exist_in_folder():
     prefix = f"{prefix_name}/"
 
     try:
-        blobs = client.list_blobs(BUCKET_NAME, prefix=prefix)
-        json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
+        if hasattr(client, "list_objects"):
+            objs = client.list_objects(BUCKET_NAME, prefix=prefix, recursive=True)
+            json_keys = [obj.object_name for obj in objs if obj.object_name.endswith(".json")]
+        else:
+            blobs = client.list_blobs(BUCKET_NAME, prefix=prefix)
+            json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
+        
         logging.info(f"Found {len(json_keys)} JSON files in {prefix}: {json_keys}")
     except Exception as exc:
         logging.exception("Failed to list objects for bucket=%s, prefix=%s", BUCKET_NAME, prefix)

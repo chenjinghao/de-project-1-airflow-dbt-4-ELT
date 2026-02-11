@@ -5,6 +5,7 @@ from airflow.sdk.bases.hook import BaseHook
 from airflow.exceptions import AirflowException
 from include.connection.connect_database import _connect_database
 import time
+import io
 
 def extract_most_active_stocks(folder_path, **context):
     """Extract most active stocks from Alpha Vantage API and store in GCS"""
@@ -35,9 +36,19 @@ def extract_most_active_stocks(folder_path, **context):
         data = json.dumps(most_active_stocks, ensure_ascii=False)
 
         object_name = f'{folder_name}/most_active_stocks.json'
-        bucket = client.bucket(bucket_name)
-        blob = bucket.blob(object_name)
-        blob.upload_from_string(data, content_type='application/json')
+        
+        if hasattr(client, "put_object"):
+            client.put_object(
+                bucket_name,
+                object_name,
+                io.BytesIO(data.encode("utf-8")),
+                len(data.encode("utf-8")),
+                content_type="application/json",
+            )
+        else:
+            bucket = client.bucket(bucket_name)
+            blob = bucket.blob(object_name)
+            blob.upload_from_string(data, content_type='application/json')
 
         logging.info(f"Stored most active stocks data at {bucket_name}/{object_name}")
         return f"{bucket_name}/{object_name}"
@@ -84,8 +95,18 @@ def extract_price_top3_most_active_stocks(file_path, **context):
             data = json.dumps(price_data, ensure_ascii=False)
 
             object_name = f'{folder_name}/price/{top3_stocks.index(symbol)}_{symbol}_stocks_price.json'
-            blob = bucket.blob(object_name)
-            blob.upload_from_string(data, content_type='application/json')
+            
+            if hasattr(client, "put_object"):
+                client.put_object(
+                    bucket_name,
+                    object_name,
+                    io.BytesIO(data.encode("utf-8")),
+                    len(data.encode("utf-8")),
+                    content_type="application/json",
+                )
+            else:
+                blob = bucket.blob(object_name)
+                blob.upload_from_string(data, content_type='application/json')
 
             logging.info(f"Stored price data for {symbol} at {bucket_name}/{object_name}")
             time.sleep(2)  # To respect API rate limits
@@ -134,8 +155,18 @@ def extract_news_top3_most_active_stocks(**context):
             data = json.dumps(news_data, ensure_ascii=False)
 
             object_name = f'{folder_name}/news/{top3_stocks.index(symbol)}_{symbol}_stocks_news.json'
-            blob = bucket.blob(object_name)
-            blob.upload_from_string(data, content_type='application/json')
+            
+            if hasattr(client, "put_object"):
+                client.put_object(
+                    bucket_name,
+                    object_name,
+                    io.BytesIO(data.encode("utf-8")),
+                    len(data.encode("utf-8")),
+                    content_type="application/json",
+                )
+            else:
+                blob = bucket.blob(object_name)
+                blob.upload_from_string(data, content_type='application/json')
 
             logging.info(f"Stored news data for {symbol} at {bucket_name}/{object_name}")
             time.sleep(2)
@@ -186,8 +217,18 @@ def extract_biz_info_top3_most_active_stocks(**context):
             data = json.dumps(biz_info_data, ensure_ascii=False)
 
             object_name = f'{folder_name}/business_info/{top3_stocks.index(symbol)}_{symbol}_stocks_business_info.json'
-            blob = bucket.blob(object_name)
-            blob.upload_from_string(data, content_type='application/json')
+            
+            if hasattr(client, "put_object"):
+                client.put_object(
+                    bucket_name,
+                    object_name,
+                    io.BytesIO(data.encode("utf-8")),
+                    len(data.encode("utf-8")),
+                    content_type="application/json",
+                )
+            else:
+                blob = bucket.blob(object_name)
+                blob.upload_from_string(data, content_type='application/json')
 
             logging.info(f"Stored business info data for {symbol} at {bucket_name}/{object_name}")
             time.sleep(2)  # To respect API rate limits
