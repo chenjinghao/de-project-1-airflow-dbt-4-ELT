@@ -7,6 +7,26 @@ from include.connection.connect_database import _connect_database
 import time
 import io
 
+def _read_most_active_from_storage(client, bucket_name, folder_name):
+    """Helper to read most_active_stocks.json from storage when XCom is missing."""
+    object_name = f'{folder_name}/most_active_stocks.json'
+    try:
+        if hasattr(client, "get_object"):
+            response = client.get_object(bucket_name, object_name)
+            data = response.read()
+            response.close()
+            response.release_conn()
+            return json.loads(data)
+        else:
+            bucket = client.bucket(bucket_name)
+            blob = bucket.blob(object_name)
+            if blob.exists():
+                data = blob.download_as_text()
+                return json.loads(data)
+    except Exception as e:
+        logging.warning(f"Failed to read {object_name} from storage: {e}")
+    return None
+
 def extract_most_active_stocks(folder_path, **context):
     """Extract most active stocks from Alpha Vantage API and store in GCS"""
     logging.info("Extracting most active stocks data from API.")
@@ -74,6 +94,11 @@ def extract_price_top3_most_active_stocks(file_path, **context):
         if not most_active_stocks:
             # Try without the group prefix
             most_active_stocks = context['ti'].xcom_pull(key='most_active_stocks', task_ids='extract_most_active_stocks')
+        
+        if not most_active_stocks:
+            logging.info("XCom missing, attempting to read most_active_stocks.json from storage.")
+            most_active_stocks = _read_most_active_from_storage(client, bucket_name, folder_name)
+
         if not most_active_stocks:
             raise AirflowException("most_active_stocks XCom missing from extract_most_active_stocks")
 
@@ -125,19 +150,26 @@ def extract_news_top3_most_active_stocks(**context):
     api = BaseHook.get_connection('stock_api')
     url = f'{api.host}'
 
-    # Try to get top3_stocks from XCom with multiple possible sources
-    top3_stocks = context['ti'].xcom_pull(key='top3_stocks', task_ids='Extraction_from_API.price_top3_most_active_stocks')
-    if not top3_stocks:
-        # Try without the group prefix
-        top3_stocks = context['ti'].xcom_pull(key='top3_stocks', task_ids='price_top3_most_active_stocks')
-    if not top3_stocks:
-        raise AirflowException("top3_stocks XCom missing from price_top3_most_active_stocks")
-
     folder_path = context['ti'].xcom_pull(key='return_value', task_ids='Extraction_from_API.create_today_folder')
     if not folder_path:
         folder_path = context['ti'].xcom_pull(key='return_value', task_ids='create_today_folder')
     bucket_name = folder_path.split('/')[0]
     folder_name = folder_path.split('/')[1]
+
+    # Try to get top3_stocks from XCom with multiple possible sources
+    top3_stocks = context['ti'].xcom_pull(key='top3_stocks', task_ids='Extraction_from_API.price_top3_most_active_stocks')
+    if not top3_stocks:
+        # Try without the group prefix
+        top3_stocks = context['ti'].xcom_pull(key='top3_stocks', task_ids='price_top3_most_active_stocks')
+    
+    if not top3_stocks:
+        logging.info("XCom missing, attempting to derive top3 from storage.")
+        most_active_stocks = _read_most_active_from_storage(client, bucket_name, folder_name)
+        if most_active_stocks:
+            top3_stocks = [stock['ticker'] for stock in most_active_stocks[:3]]
+
+    if not top3_stocks:
+        raise AirflowException("top3_stocks XCom missing and could not be derived from storage")
 
     try:
         for symbol in top3_stocks:
@@ -185,21 +217,26 @@ def extract_biz_info_top3_most_active_stocks(**context):
     api = BaseHook.get_connection('stock_api')
     url = f'{api.host}'
 
+    folder_path = context['ti'].xcom_pull(key='return_value', task_ids='Extraction_from_API.create_today_folder')
+    if not folder_path:
+        folder_path = context['ti'].xcom_pull(key='return_value', task_ids='create_today_folder')
+    bucket_name = folder_path.split('/')[0]
+    folder_name = folder_path.split('/')[1]
+
     # Try to get top3_stocks from XCom with multiple possible sources
     top3_stocks = context['ti'].xcom_pull(key='top3_stocks', task_ids='Extraction_from_API.price_top3_most_active_stocks')
     if not top3_stocks:
         # Try without the group prefix
         top3_stocks = context['ti'].xcom_pull(key='top3_stocks', task_ids='price_top3_most_active_stocks')
+    
     if not top3_stocks:
-        raise AirflowException("top3_stocks XCom missing from price_top3_most_active_stocks")
+        logging.info("XCom missing, attempting to derive top3 from storage.")
+        most_active_stocks = _read_most_active_from_storage(client, bucket_name, folder_name)
+        if most_active_stocks:
+            top3_stocks = [stock['ticker'] for stock in most_active_stocks[:3]]
 
-    folder_path = context['ti'].xcom_pull(key='return_value', task_ids='Extraction_from_API.create_today_folder')
-    
-    if not folder_path:
-        folder_path = context['ti'].xcom_pull(key='return_value', task_ids='create_today_folder')
-    
-    bucket_name = folder_path.split('/')[0]
-    folder_name = folder_path.split('/')[1]
+    if not top3_stocks:
+        raise AirflowException("top3_stocks XCom missing and could not be derived from storage")
 
     try:
         for symbol in top3_stocks:
