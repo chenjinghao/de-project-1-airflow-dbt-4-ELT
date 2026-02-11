@@ -62,7 +62,7 @@ jobs:
             --command="
               cd ~/airflow_project && \
               set -a && source .env && set +a && \
-              astro dev object import --no-input 2>&1 || echo 'Object import completed'
+              astro dev object import || echo 'Object import completed'
             "
           
           # Stop containers if running
@@ -70,13 +70,12 @@ jobs:
             --zone=${{ secrets.ZONE }} \
             --command="
               cd ~/airflow_project && \
-              astro dev stop 2>&1 || echo 'No containers to stop'
+              astro dev stop
             "
           
           # Start containers with TTY
           gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
-            --tty \
             --command="
               cd ~/airflow_project && \
               astro dev start --wait 5m
