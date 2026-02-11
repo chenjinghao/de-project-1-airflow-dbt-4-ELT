@@ -53,10 +53,9 @@ jobs:
           # 2. Copy .env file to VM
           gcloud compute scp .env $SSH_USER@${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
 
-          # 3. Build and Start Containers with TTY allocation
+          # 3. Build and Start Containers
           gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
-            --tty \
             --command="
               cd ~/airflow_project && \
               sudo chown -R \$USER:\$USER . && \
