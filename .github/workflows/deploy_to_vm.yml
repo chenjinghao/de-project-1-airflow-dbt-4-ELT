@@ -46,7 +46,7 @@ jobs:
           # 3. Build and Start Containers
           gcloud compute ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.INSTANCE_NAME }} --zone=${{ secrets.ZONE }} --command="
             cd ~/airflow_project &&
-            sudo chown -R \$(whoami):\$(whoami) . &&
+            sudo chown -R $USER:$USER . &&
             set -a && source .env && set +a &&
             astro dev stop &&
             astro dev start --wait 5m
