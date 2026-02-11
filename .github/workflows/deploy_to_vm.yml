@@ -39,6 +39,43 @@ jobs:
           ALPHA_VANTAGE_API_KEY=${{ secrets.ALPHA_VANTAGE_API_KEY }}
           EOF
 
+          # Create airflow_settings.yaml file securely on the runner
+          cat <<EOF > airflow_settings.yaml
+          connections:
+            - conn_id: minio
+              conn_type: aws
+              description: "MinIO Object Storage"
+              login: ${MINIO_ROOT_USER}
+              password: ${MINIO_ROOT_PASSWORD}
+              extra:
+                endpoint_url: "http://minio:9000"
+
+            - conn_id: postgres_stocks
+              conn_type: postgres
+              description: "Stocks PostgreSQL Database"
+              host: database
+              login: ${POSTGRES_USER}
+              password: ${POSTGRES_PASSWORD}
+              schema: ${POSTGRES_DB}
+              port: ${POSTGRES_PORT}
+
+            - conn_id:  stock_api
+              conn_type: http
+              description: "Alpha Vantage Stock API"
+              host: "https://www.alphavantage.co/query"
+              password: ${ALPHA_VANTAGE_API_KEY}
+
+            - conn_id: slack
+              conn_type: slack
+              password: ${SLACK_API_TOKEN}
+
+          pools:
+            - pool_name: api_pool
+              pool_slot: 1
+              pool_description: "Alpha Vantage API rate limiting"
+          EOF
+
+
           SSH_USER="${{ secrets.SSH_USERNAME }}"
           
           # 1. Update Code on VM (same as before)
@@ -53,7 +90,7 @@ jobs:
           # 2. Copy .env file to VM
           gcloud compute scp .env $SSH_USER@${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
 
-
+          gcloud compute scp airflow_settings.yaml $SSH_USER@${{ secrets.INSTANCE_NAME }}:~/airflow_project/airflow_settings.yaml --zone=${{ secrets.ZONE }}
           
           # 3. Source .env on VM (if needed for subsequent commands)
           gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
