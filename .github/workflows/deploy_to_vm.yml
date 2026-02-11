@@ -1,29 +1,3 @@
-name: Deploy to Google Cloud VM
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
-jobs:
-  deploy:
-    name: Update VM
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch all history for proper git operations
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
-        with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
       - name: Deploy to VM
         run: |
           # Create .env file securely on the runner
@@ -39,22 +13,31 @@ jobs:
           ALPHA_VANTAGE_API_KEY=${{ secrets.ALPHA_VANTAGE_API_KEY }}
           EOF
 
+          # Get the SSH username from secrets
+          SSH_USER="${{ secrets.SSH_USERNAME }}"
+          
           # 1. Fix Git permissions and Update Code on VM
-          gcloud compute ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.INSTANCE_NAME }} \
+          gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
             --command="
               cd ~/airflow_project && \
-              sudo chown -R $USER:$USER . && \
-              git pull 
+              echo 'Current user: \$(whoami)' && \
+              echo 'Current directory: \$(pwd)' && \
+              ls -la .git/ && \
+              sudo chown -R \$USER:\$USER . && \
+              sudo chown -R \$USER:\$USER .git/ && \
+              sudo chmod -R 755 .git/ && \
+              git status && \
+              git pull origin main
             "
 
           # 2. Copy .env file to VM
-          gcloud compute scp .env ${{ secrets.SSH_USERNAME }}@${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
+          gcloud compute scp .env $SSH_USER@${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
 
           # 3. Build and Start Containers
-          gcloud compute ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.INSTANCE_NAME }} --zone=${{ secrets.ZONE }} --command="
+          gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} --zone=${{ secrets.ZONE }} --command="
             cd ~/airflow_project &&
-            sudo chown -R $USER:$USER . &&
+            sudo chown -R \$USER:\$USER . &&
             set -a && source .env && set +a &&
             astro dev object import &&
             astro dev stop &&
