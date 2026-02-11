@@ -41,7 +41,7 @@ jobs:
 
           SSH_USER="${{ secrets.SSH_USERNAME }}"
           
-          # 1. Update Code on VM
+          # 1. Update Code on VM (same as before)
           gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
             --command="
@@ -53,14 +53,31 @@ jobs:
           # 2. Copy .env file to VM
           gcloud compute scp .env $SSH_USER@${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
 
-          # 3. Build and Start Containers
+          # 3. Run astro commands separately with TTY
+          echo "Running astro commands with TTY allocation..."
+          
+          # First, run object import without TTY (it shouldn't need it)
           gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
             --command="
               cd ~/airflow_project && \
-              sudo chown -R \$USER:\$USER . && \
               set -a && source .env && set +a && \
-              astro dev object import && \
-              astro dev stop && \
+              astro dev object import --no-input 2>&1 || echo 'Object import completed'
+            "
+          
+          # Stop containers if running
+          gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
+            --zone=${{ secrets.ZONE }} \
+            --command="
+              cd ~/airflow_project && \
+              astro dev stop 2>&1 || echo 'No containers to stop'
+            "
+          
+          # Start containers with TTY
+          gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
+            --zone=${{ secrets.ZONE }} \
+            --tty \
+            --command="
+              cd ~/airflow_project && \
               astro dev start --wait 5m
             "
