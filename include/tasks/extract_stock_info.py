@@ -68,7 +68,6 @@ def extract_price_top3_most_active_stocks(file_path, **context):
         client = _connect_database()
         bucket_name = file_path.split('/')[0]
         folder_name = file_path.split('/')[1]
-        bucket = client.bucket(bucket_name)
 
         # Try to get most_active_stocks from XCom with multiple possible sources
         most_active_stocks = context['ti'].xcom_pull(key='most_active_stocks', task_ids='Extraction_from_API.extract_most_active_stocks')
@@ -105,6 +104,7 @@ def extract_price_top3_most_active_stocks(file_path, **context):
                     content_type="application/json",
                 )
             else:
+                bucket = client.bucket(bucket_name)
                 blob = bucket.blob(object_name)
                 blob.upload_from_string(data, content_type='application/json')
 
@@ -138,7 +138,6 @@ def extract_news_top3_most_active_stocks(**context):
         folder_path = context['ti'].xcom_pull(key='return_value', task_ids='create_today_folder')
     bucket_name = folder_path.split('/')[0]
     folder_name = folder_path.split('/')[1]
-    bucket = client.bucket(bucket_name)
 
     try:
         for symbol in top3_stocks:
@@ -165,6 +164,7 @@ def extract_news_top3_most_active_stocks(**context):
                     content_type="application/json",
                 )
             else:
+                bucket = client.bucket(bucket_name)
                 blob = bucket.blob(object_name)
                 blob.upload_from_string(data, content_type='application/json')
 
@@ -200,7 +200,6 @@ def extract_biz_info_top3_most_active_stocks(**context):
     
     bucket_name = folder_path.split('/')[0]
     folder_name = folder_path.split('/')[1]
-    bucket = client.bucket(bucket_name)
 
     try:
         for symbol in top3_stocks:
@@ -227,6 +226,7 @@ def extract_biz_info_top3_most_active_stocks(**context):
                     content_type="application/json",
                 )
             else:
+                bucket = client.bucket(bucket_name)
                 blob = bucket.blob(object_name)
                 blob.upload_from_string(data, content_type='application/json')
 
