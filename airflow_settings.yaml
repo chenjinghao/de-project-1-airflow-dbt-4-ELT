@@ -1,0 +1,32 @@
+airflow_connections:
+  - conn_id: minio
+    conn_type: aws
+    description: "MinIO Object Storage"
+    login: ${MINIO_ROOT_USER}
+    password: ${MINIO_ROOT_PASSWORD}
+    extra:
+      endpoint_url: "http://minio:9000"
+
+  - conn_id: postgres_stocks
+    conn_type: postgres
+    description: "Stocks PostgreSQL Database"
+    host: database
+    login: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    schema: ${POSTGRES_DB}
+    port: ${POSTGRES_PORT}
+
+  - conn_id:  stock_api
+    conn_type: http
+    description: "Alpha Vantage Stock API"
+    host: "https://www.alphavantage.co/query"
+    password: ${ALPHA_VANTAGE_API_KEY}
+
+  - conn_id: slack
+    conn_type: slack
+    password: ${SLACK_API_TOKEN}
+
+airflow_pools:
+  - pool_name: api_pool
+    pool_slot: 1
+    pool_description: "Alpha Vantage API rate limiting"
