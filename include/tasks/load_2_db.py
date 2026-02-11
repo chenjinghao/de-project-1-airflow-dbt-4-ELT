@@ -26,7 +26,18 @@ def _ensure_table(cur, table_name):
     )
 
 def _load_json(client, bucket_name, blob_name):
-    """Load JSON from GCS."""
+    """Load JSON from GCS or MinIO."""
+    if hasattr(client, "get_object"):
+        try:
+            response = client.get_object(bucket_name, blob_name)
+            data = response.read()
+            response.close()
+            response.release_conn()
+            return json.loads(data)
+        except Exception as e:
+            logging.warning(f"Failed to read {blob_name} from MinIO: {e}")
+            return None
+
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
     
@@ -73,8 +84,12 @@ def load_to_db(**kwargs):
         with conn.cursor() as cur:
             
             # List files
-            blobs = client.list_blobs(BUCKET_NAME, prefix=prefix_name)
-            json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
+            if hasattr(client, "list_objects"):
+                objs = client.list_objects(BUCKET_NAME, prefix=prefix_name, recursive=True)
+                json_keys = [obj.object_name for obj in objs if obj.object_name.endswith(".json")]
+            else:
+                blobs = client.list_blobs(BUCKET_NAME, prefix=prefix_name)
+                json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
             logging.info(f"Found {len(json_keys)} files for date {prefix_name}")
 
             _ensure_table(cur, TABLE_NAME)
@@ -237,8 +252,12 @@ def load_2_db_biz_lookup(**kwargs):
         logging.info("Postgres connection established")
         with conn.cursor() as cur:
 
-            blobs = client.list_blobs(BUCKET_NAME, prefix=prefix)
-            json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
+            if hasattr(client, "list_objects"):
+                objs = client.list_objects(BUCKET_NAME, prefix=prefix, recursive=True)
+                json_keys = [obj.object_name for obj in objs if obj.object_name.endswith(".json")]
+            else:
+                blobs = client.list_blobs(BUCKET_NAME, prefix=prefix)
+                json_keys = [blob.name for blob in blobs if blob.name.endswith(".json")]
 
             _ensure_lookup_table(cur, BIZ_LOOKUP_TABLE_NAME)
 
