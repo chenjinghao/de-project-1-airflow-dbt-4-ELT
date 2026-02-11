@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper git operations
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -37,10 +39,16 @@ jobs:
           ALPHA_VANTAGE_API_KEY=${{ secrets.ALPHA_VANTAGE_API_KEY }}
           EOF
 
-          # 1. Update Code on VM
+          # 1. Fix Git permissions and Update Code on VM
           gcloud compute ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
-            --command="cd ~/airflow_project && sudo chown -R $USER:$USER . && git pull origin main"
+            --command="
+              cd ~/airflow_project && \
+              sudo chown -R $USER:$USER . && \
+              sudo chmod -R u+rw .git && \
+              git config --global --add safe.directory $(pwd) && \
+              git pull origin main
+            "
 
           # 2. Copy .env file to VM
           gcloud compute scp .env ${{ secrets.SSH_USERNAME }}@${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
