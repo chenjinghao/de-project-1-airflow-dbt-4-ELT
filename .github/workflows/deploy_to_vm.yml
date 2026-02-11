@@ -48,5 +48,6 @@ jobs:
             cd ~/airflow_project &&
             sudo chown -R \$(whoami):\$(whoami) . &&
             set -a && source .env && set +a &&
-            astro dev restart
+            astro dev stop &&
+            astro dev start --wait 5m
           "
