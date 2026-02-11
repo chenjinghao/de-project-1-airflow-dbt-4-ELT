@@ -39,33 +39,29 @@ jobs:
           ALPHA_VANTAGE_API_KEY=${{ secrets.ALPHA_VANTAGE_API_KEY }}
           EOF
 
-          # Get the SSH username from secrets
           SSH_USER="${{ secrets.SSH_USERNAME }}"
           
-          # 1. Fix Git permissions and Update Code on VM
+          # 1. Update Code on VM
           gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
             --command="
               cd ~/airflow_project && \
-              echo 'Current user: \$(whoami)' && \
-              echo 'Current directory: \$(pwd)' && \
-              ls -la .git/ && \
               sudo chown -R \$USER:\$USER . && \
-              sudo chown -R \$USER:\$USER .git/ && \
-              sudo chmod -R 755 .git/ && \
-              git status && \
               git pull origin main
             "
 
           # 2. Copy .env file to VM
           gcloud compute scp .env $SSH_USER@${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }}
 
-          # 3. Build and Start Containers
-          gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} --zone=${{ secrets.ZONE }} --command="
-            cd ~/airflow_project &&
-            sudo chown -R \$USER:\$USER . &&
-            set -a && source .env && set +a &&
-            astro dev object import &&
-            astro dev stop &&
-            astro dev start --wait 5m
-          "
+          # 3. Build and Start Containers with TTY allocation
+          gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
+            --zone=${{ secrets.ZONE }} \
+            --tty \
+            --command="
+              cd ~/airflow_project && \
+              sudo chown -R \$USER:\$USER . && \
+              set -a && source .env && set +a && \
+              astro dev object import && \
+              astro dev stop && \
+              astro dev start --wait 5m
+            "
