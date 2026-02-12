@@ -84,6 +84,7 @@ jobs:
             --command="
               cd ~/airflow_project && \
               sudo chown -R \$USER:\$USER . && \
+              git reset --hard && \
               git pull origin main
             "
 
