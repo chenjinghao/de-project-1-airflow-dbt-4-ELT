@@ -63,10 +63,6 @@ services:
   #     - airflow
   #   command: run
 
-  api-server:
-    ports:
-      - "0.0.0.0:8081:8080"
-    
 networks:
   airflow:
     driver: bridge

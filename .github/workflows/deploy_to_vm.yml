@@ -78,7 +78,7 @@ jobs:
 
           SSH_USER="${{ secrets.SSH_USERNAME }}"
           
-          # 1. Update Code on VM (same as before)
+          Update Code on VM (same as before)
           gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
             --tunnel-through-iap \
@@ -89,18 +89,5 @@ jobs:
               git pull origin main
             "
 
-          # 2. Copy .env file to VM
-          gcloud compute scp .env $SSH_USER@${{ secrets.INSTANCE_NAME }}:~/airflow_project/.env --zone=${{ secrets.ZONE }} --tunnel-through-iap
-
-          gcloud compute scp airflow_settings.yaml $SSH_USER@${{ secrets.INSTANCE_NAME }}:~/airflow_project/airflow_settings.yaml --zone=${{ secrets.ZONE }} --tunnel-through-iap
-          
-          # 3. Source .env on VM (if needed for subsequent commands)
-          gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
-            --zone=${{ secrets.ZONE }} \
-            --tunnel-through-iap \
-            --command="
-              cd ~/airflow_project && \
-              set -a && source .env && set +a
-            "
 
         
