@@ -78,7 +78,7 @@ jobs:
 
           SSH_USER="${{ secrets.SSH_USERNAME }}"
           
-          Update Code on VM (same as before)
+          # Update Code on VM
           gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
             --tunnel-through-iap \
