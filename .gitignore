@@ -1,9 +1,11 @@
+.astro
 .git
 .env
 .DS_Store
 __pycache__/
 astro
 .venv
+.vscode
 airflow-webserver.pid
 webserver_config.py
 airflow.cfg

@@ -11,8 +11,8 @@ services:
       - 19000:9000
       - 19001:9001
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     command: server /data --console-address ":9001"
     networks:
       - airflow
@@ -25,7 +25,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-stocks_db}
     ports:
-      - "0.0.0.0:${POSTGRES_PORT}:5432"
+      - "0.0.0.0:${POSTGRES_PORT:-5000}:5432" # uncomment this line when commit to g
+      # - 5000:5432 # uncomment this line when run locally
     volumes:
       - ./include/data/postgres:/var/lib/postgresql/data
     networks:
