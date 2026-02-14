@@ -230,6 +230,7 @@ de-project-1-airflow-dbt-4-ELT/
 
 ## Connect with me
 To know more about me and my projects, please visit my personal website: 
+
 :globe_with_meridians: [https://adamchenjinghao.notion.site](https://adamchenjinghao.notion.site)
 
 :email: [Adam_CJH@outlook.com](mailto:Adam_CJH@outlook.com)
