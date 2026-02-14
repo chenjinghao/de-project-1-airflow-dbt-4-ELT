@@ -82,6 +82,7 @@ jobs:
           gcloud compute ssh $SSH_USER@${{ secrets.INSTANCE_NAME }} \
             --zone=${{ secrets.ZONE }} \
             --tunnel-through-iap \
+            --quiet \
             --command="
               cd ~/airflow_project && \
               sudo chown -R \$USER:\$USER . && \
