@@ -200,23 +200,24 @@ de-project-1-airflow-dbt-4-ELT/
 
 6. **Common issues**
    * Port 5432 taken by another image
-      ```bash
-      E:\myprojects\de-project-1-airflow-dbt-4-ELT>netstat -ano|findstr :5432
-      TCP    127.0.0.1:5432         0.0.0.0:0              LISTENING       41692
+        - Solution:
+        ```bash
+        E:\myprojects\de-project-1-airflow-dbt-4-ELT>netstat -ano|findstr :5432
+        TCP    127.0.0.1:5432         0.0.0.0:0              LISTENING       41692
 
-      E:\myprojects\de-project-1-airflow-dbt-4-ELT>taskkill /pid 41692 /f
-      SUCCESS: The process with PID 41692 has been terminated.
-      ```
+        E:\myprojects\de-project-1-airflow-dbt-4-ELT>taskkill /pid 41692 /f
+        SUCCESS: The process with PID 41692 has been terminated.
+        ```
 ### Reference
 *   **Courses**
       *   [Learn Apache Airflow from Astronomer Academy](https://academy.astronomer.io)
       *   [Apache Airflow: The Hands-On Guide](https://www.udemy.com/course/the-ultimate-hands-on-course-to-master-apache-airflow/)
       *   [dbt Certified Developer Path](https://learn.getdbt.com/learn/learning-path/dbt-certified-developer)
       *   **Youtube**
-         -   [Data Engineering Zoomcamp](https://datatalks.club/blog/data-engineering-zoomcamp.html)
-         -   [How to build an automated data pipeline using Airflow, dbt, Postgres, and Superset](https://youtu.be/vMgFadPxOLk?si=Iq_KD8kIq0kHRmTr)
-         -   [Code along - build an ELT Pipeline in 1 Hour (dbt, Snowflake, Airflow)](https://youtu.be/OLXkGB7krGo?si=INsSOx6lxBelpgPw)
-         -   [How to Add Slack Notifications to Your Airflow DAG's with Airflow Notifiers!](https://youtu.be/4yQJWnhKEa4?si=YINvm_1zTnCQJmmF)
+            -   [Data Engineering Zoomcamp](https://datatalks.club/blog/data-engineering-zoomcamp.html)
+            -   [How to build an automated data pipeline using Airflow, dbt, Postgres, and Superset](https://youtu.be/vMgFadPxOLk?si=Iq_KD8kIq0kHRmTr)
+            -   [Code along - build an ELT Pipeline in 1 Hour (dbt, Snowflake, Airflow)](https://youtu.be/OLXkGB7krGo?si=INsSOx6lxBelpgPw)
+            -   [How to Add Slack Notifications to Your Airflow DAG's with Airflow Notifiers!](https://youtu.be/4yQJWnhKEa4?si=YINvm_1zTnCQJmmF)
 
 *   **Documentation**
       *   [Astronomer Documentation](https://www.astronomer.io/docs)
