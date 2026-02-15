@@ -56,7 +56,7 @@ This iterative process ensured that every component was built with a deep unders
 
    <summary>Task Group: Extract Stock Info</summary>
    
-   The flow is designed to avoid duplicate extraction from API since Alpha Vantage put a 25 per day request limit on free account.
+   The flow is designed to avoid duplicate extraction from API since Alpha Vantage enforces a 25-request-per-day limit on free accounts.
 
    ![Airflow Task Flow Diagram](static/img_airflow_tg_extraction.png)
 
@@ -107,7 +107,7 @@ This iterative process ensured that every component was built with a deep unders
 
    ### Google composer + cloud SQL
 
-> *Note: This infrastructure costs approximately USD 50+ per month after taking free tier quota into consideration. However, it is easier to setup, and it run faster than Google Cloud VM*
+> *Note: This infrastructure costs approximately USD 50+ per month after taking free tier quota into consideration. However, it is easier to setup, and it runs faster than Google Cloud VM*
 
 ![Project Architecture Diagram](static/img_project-de-workflow.png)
 
@@ -133,15 +133,15 @@ This iterative process ensured that every component was built with a deep unders
 de-project-1-airflow-dbt-4-ELT/
 ├── dags/                        # Airflow DAGs (Extraction logic)
 ├── include/
-│   ├── connection/              # Connection to Minio(Objective storage),
+│   ├── connection/              # Connection to Minio (Object storage),
 │   │                              optional to connect Google Cloud Storage
 │   ├── dbt/my_project/          # dbt project (Transformation logic)
 │   │   ├── models/              # SQL models (Staging, Marts)
 │   │   └── dbt_project.yml      # dbt configuration
 │   └── tasks/                   # Task groups
-│   │   ├── checking_b4_extraction.py/  # Check to avoid duplication and holiday
-│   │   └── extract_stock_info.py/      # Extract info. from Alpha Vantage API
-│   │   └── load_2_db.py/               # Load data to PostgreSQL   
+│   │   ├── checking_b4_extraction.py   # Check to avoid duplication and holiday
+│   │   ├── extract_stock_info.py       # Extract info. from Alpha Vantage API
+│   │   └── load_2_db.py                # Load data to PostgreSQL   
 ├── .github/workflows/           # CI/CD deployment pipelines
 ├── docker-compose.override.yml  # Local infrastructure (MinIO, Postgres)
 ├── requirements.txt             # Python dependencies
@@ -180,7 +180,7 @@ de-project-1-airflow-dbt-4-ELT/
     ```
 
       - .gitignore this file
-      - the varians defined in `.env` will pass to `docker-compose.override.yml`
+      - The variables defined in `.env` will pass to `docker-compose.override.yml`
          ```bash
          #use following command to check 
          docker compose -f docker-compose.override.yml config
@@ -193,12 +193,12 @@ de-project-1-airflow-dbt-4-ELT/
     *   **Airflow UI**: http://localhost:8080
     *   **MinIO Console**: http://localhost:19001
     *   **pgAdmin**: http://localhost:5800 
-5. **Setup airflow connection and pool**
+5. **Set up Airflow connections and pools**
    * The Astro CLI is designed to automatically import airflow_settings.yaml into your Airflow environment upon startup.
       - or use command ``` astro dev object import ```
    * Environment Variables defined in `.env` must have the same name as in `airflow_settings.yaml`
 
-6. **Common issues**
+6. **Common Issues**
    * Port 5432 taken by another image
         - Solution:
         ```bash
@@ -213,7 +213,7 @@ de-project-1-airflow-dbt-4-ELT/
       *   [Learn Apache Airflow from Astronomer Academy](https://academy.astronomer.io)
       *   [Apache Airflow: The Hands-On Guide](https://www.udemy.com/course/the-ultimate-hands-on-course-to-master-apache-airflow/)
       *   [dbt Certified Developer Path](https://learn.getdbt.com/learn/learning-path/dbt-certified-developer)
-      *   **Youtube**
+      *   **YouTube**
             -   [Data Engineering Zoomcamp](https://datatalks.club/blog/data-engineering-zoomcamp.html)
             -   [How to build an automated data pipeline using Airflow, dbt, Postgres, and Superset](https://youtu.be/vMgFadPxOLk?si=Iq_KD8kIq0kHRmTr)
             -   [Code along - build an ELT Pipeline in 1 Hour (dbt, Snowflake, Airflow)](https://youtu.be/OLXkGB7krGo?si=INsSOx6lxBelpgPw)
