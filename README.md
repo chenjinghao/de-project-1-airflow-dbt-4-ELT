@@ -21,6 +21,29 @@ This repository hosts the **Backend ELT Pipeline** for my Data Engineering Capst
 
 This project complements the **Frontend Visualization Suite**, which consumes the processed data to build interactive dashboards.
 > 🌐 **Live Demo:** [JINGHAOdata.engineer](https://www.jinghaodata.engineer/)
+<details>
+
+<summary>Screenshot of the Dashboard</summary>
+
+#### :exclamation: In case the app is down.
+
+<details>
+
+<summary>When the expanders are on: </summary>
+
+![When the expanders are on](static/screencapture-jinghaodata-engineer-expander-on.png)
+
+</details>
+
+<details>
+
+<summary>When the expanders are off: </summary>
+
+![Project Architecture Diagram](static/screencapture-jinghaodata-engineer-expander-off.png)
+
+</details>
+
+</details>
 
 👉 [View Frontend Repository](https://github.com/chenjinghao/de-project-2-Streamlit-4-Viz)
 
