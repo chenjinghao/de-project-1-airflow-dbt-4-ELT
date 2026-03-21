@@ -19,6 +19,7 @@
 
 This repository hosts the **Backend ELT Pipeline** for my Data Engineering Capstone Project. It orchestrates the end-to-end flow of financial data—from API extraction to analytical data marts.
 
+#### Dashboard 
 This project complements the **Frontend Visualization Suite**, which consumes the processed data to build interactive dashboards.
 > 🌐 **Live Demo:** [JINGHAOdata.engineer](https://www.jinghaodata.engineer/)
 Or visit alternative option: [Dashboard make with Tableau Public](https://public.tableau.com/views/TickersAnalysisDashboard/Dashboard?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
